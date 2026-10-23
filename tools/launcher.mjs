@@ -11,8 +11,8 @@
  * 因此 exe 是单文件、可移动的。
  */
 import http from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
-import { join, extname, normalize } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, extname } from 'node:path';
 import { exec } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -44,42 +44,63 @@ const MIME = {
  * 以 exe 同级 `__assets__` 虚拟路径暴露（build-exe.mjs 中配置 assets）。
  * 开发运行：使用仓库内的 dist/。
  */
-function resolveAssetRoot() {
+/**
+ * 资源根目录候选。pkg 打包后内嵌资源位于快照文件系统，
+ * 相对路径 'dist/...' 可直接被 readFileSync 解析；开发运行时用磁盘上的 dist/。
+ */
+function assetRoots() {
   if (process.pkg) {
-    return 'dist';
+    return ['dist', join(dirname(process.execPath), 'dist')];
   }
   const here = dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    join(here, '..', 'dist'),
-    join(process.cwd(), 'dist'),
-    join(here, 'dist'),
-  ];
-  for (const c of candidates) {
-    if (existsSync(join(c, 'index.html'))) return c;
-  }
-  return candidates[0];
+  return [join(here, '..', 'dist'), join(process.cwd(), 'dist'), join(here, 'dist')];
 }
 
-const ASSET_ROOT = resolveAssetRoot();
+const ASSET_ROOTS = assetRoots();
 
-function readAsset(urlPath) {
-  // 归一化并阻断路径穿越
-  const clean = decodeURIComponent(urlPath.split('?')[0].split('#')[0]);
-  const rel = normalize(clean).replace(/^([/\\])+/, '').replace(/^(\.\.[/\\])+/, '');
-  const candidates = [
-    join(ASSET_ROOT, rel),
-    join(ASSET_ROOT, rel, 'index.html'),
-    join(ASSET_ROOT, 'index.html'), // SPA 回退
-  ];
-  for (const file of candidates) {
+/** 把 URL 清洗成安全的相对路径（阻断目录穿越），不做字符串前缀比较 */
+function toSafeRelative(urlPath) {
+  let clean;
+  try {
+    clean = decodeURIComponent(urlPath.split('?')[0].split('#')[0]);
+  } catch {
+    clean = urlPath.split('?')[0];
+  }
+  const parts = clean.split(/[/\\]+/).filter((p) => p && p !== '.' && p !== '..');
+  return parts.join('/');
+}
+
+function tryRead(relative) {
+  for (const root of ASSET_ROOTS) {
+    const file = join(root, relative);
     try {
-      if (!file.startsWith(normalize(ASSET_ROOT))) continue;
-      return { body: readFileSync(file), ext: extname(file) || '.html' };
+      const body = readFileSync(file);
+      return { body, ext: extname(file) || '.html' };
     } catch {
-      /* 继续尝试 */
+      /* 换下一个根目录 */
     }
   }
   return null;
+}
+
+function readAsset(urlPath) {
+  const rel = toSafeRelative(urlPath || '/');
+  if (!rel) return tryRead('index.html');
+  // 1) 精确命中  2) 目录下的 index.html  3) SPA 回退到根 index.html
+  return tryRead(rel) ?? tryRead(`${rel}/index.html`) ?? tryRead('index.html');
+}
+
+/** 启动自检：确保 index.html 可读，否则直接给出明确报错 */
+function selfCheck() {
+  const index = tryRead('index.html');
+  if (!index) {
+    console.error('\n  ✗ 启动失败：找不到内置资源 index.html');
+    console.error(`    进程类型：${process.pkg ? 'pkg 打包 exe' : '开发模式'}`);
+    console.error(`    查找路径：${ASSET_ROOTS.join(' , ')}`);
+    console.error('    请重新构建：npm run exe\n');
+    process.exit(1);
+  }
+  return index.body.length;
 }
 
 /* -------------------------------------------------------------------- 服务器 */
@@ -140,7 +161,7 @@ function openBrowser(url) {
   });
 }
 
-function banner(url, port) {
+function banner(url, port, indexBytes) {
   const line = '─'.repeat(52);
   console.log('');
   console.log(`  ${line}`);
@@ -149,7 +170,8 @@ function banner(url, port) {
   console.log('');
   console.log(`   访问地址   ${url}`);
   console.log(`   监听端口   ${HOST}:${port}（仅本机可访问）`);
-  console.log(`   资源来源   ${process.pkg ? 'exe 内嵌' : ASSET_ROOT}`);
+  console.log(`   资源来源   ${process.pkg ? 'exe 内嵌' : ASSET_ROOTS[0]}`);
+  console.log(`   资源自检   index.html 可读（${indexBytes} 字节）✓`);
   console.log('');
   console.log('   🔒 你的密钥只保存在这个浏览器里，不会上传到任何服务器。');
   console.log('      主密码永不保存，关掉页面即锁定。');
@@ -173,13 +195,15 @@ function tryListen(port, attempt = 0) {
 
   server.listen(port, HOST, () => {
     const url = `http://${HOST}:${port}/`;
-    banner(url, port);
+    banner(url, port, INDEX_BYTES);
     if (!process.env.SIMPLEF2A_NO_OPEN) {
       setTimeout(() => openBrowser(url), 350);
     }
   });
 }
 
+// 先自检资源，再监听；避免「服务起来了但全是 404」
+const INDEX_BYTES = selfCheck();
 tryListen(PORT_START);
 
 // 保持进程存活；Ctrl+C 优雅退出

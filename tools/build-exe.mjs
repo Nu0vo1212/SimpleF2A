@@ -81,10 +81,18 @@ await ensureBaseBinary();
 /* ------------------------------------------------------------- 打包 */
 
 console.log('→ 打包 exe（内嵌 dist/ 资源）…');
+
+// 直接调用 pkg 的 JS 入口，避免 Windows 下 spawn .cmd 的 EINVAL 问题
+const PKG_BIN = join(ROOT, 'node_modules', '@yao-pkg', 'pkg', 'lib-es5', 'bin.js');
+if (!existsSync(PKG_BIN)) {
+  console.error('✗ 未找到 @yao-pkg/pkg，请先运行：npm install');
+  process.exit(1);
+}
+
 execFileSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
+  process.execPath,
   [
-    '@yao-pkg/pkg',
+    PKG_BIN,
     ENTRY,
     '--targets',
     'node24-win-x64',
