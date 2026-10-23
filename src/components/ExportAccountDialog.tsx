@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Download, Loader2, QrCode } from 'lucide-react';
+import { MorphIcon, icons } from './Icons';
 import { Dialog } from './Dialog';
 import type { OtpAccount } from '../otp/types';
 import { buildOtpAuthUri } from '../otp/uri';
@@ -75,10 +75,10 @@ export function ExportAccountDialog({
               toast(ok ? 'otpauth:// 链接已复制' : '复制失败', ok ? 'success' : 'warning');
             }}
           >
-            <Copy size={15} aria-hidden="true" /> 复制链接
+            <MorphIcon icon={icons.copy} size={15} reducedMotion="user" aria-hidden="true" /> 复制链接
           </button>
           <button type="button" className="primary-button" onClick={() => void downloadPng()}>
-            <Download size={15} aria-hidden="true" /> 下载二维码
+            <MorphIcon icon={icons.download} size={15} reducedMotion="user" aria-hidden="true" /> 下载二维码
           </button>
         </>
       }
@@ -87,7 +87,7 @@ export function ExportAccountDialog({
         <div className="export-qr">
           {busy || !svg ? (
             <div className="export-qr__loading">
-              <Loader2 size={20} className="spin" aria-hidden="true" />
+              <MorphIcon icon={icons.loader} size={20} className="spin" reducedMotion="user" aria-hidden="true" />
             </div>
           ) : (
             <div className="export-qr__svg" dangerouslySetInnerHTML={{ __html: svg }} role="img" aria-label="账户二维码" />
@@ -113,7 +113,7 @@ export function ExportAccountDialog({
           </div>
           <div className="export-actions">
             <button type="button" className="ghost-button" onClick={downloadSvg}>
-              <QrCode size={15} aria-hidden="true" /> 下载 SVG
+              <MorphIcon icon={icons.qr} size={15} reducedMotion="user" aria-hidden="true" /> 下载 SVG
             </button>
           </div>
         </div>

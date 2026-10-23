@@ -6,9 +6,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { VaultContext, type AppSettings, type ToastItem, type ToastKind, type VaultContextValue } from './context';
+import {
+  VaultContext,
+  type AppSettings,
+  type ToastItem,
+  type ToastKind,
+  type VaultContextValue,
+} from './context';
 import type { OtpAccount } from '../otp/types';
-import * as vault from '../vault/vault';
+import * as store from '../vault/vault';
 import {
   applyTierToDocument,
   detectTier,
@@ -23,7 +29,6 @@ import { pickBackground, preloadImage, readCachedBackground } from './background
 const SETTINGS_KEY = 'simplef2a:settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  autoLockOnHide: true,
   theme: 'dark',
   backgroundImage: true,
   fetchRemoteIcons: true,
@@ -35,7 +40,6 @@ function readSettings(): AppSettings {
     if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
     return {
-      autoLockOnHide: parsed.autoLockOnHide ?? DEFAULT_SETTINGS.autoLockOnHide,
       theme: parsed.theme === 'light' ? 'light' : 'dark',
       backgroundImage: parsed.backgroundImage ?? DEFAULT_SETTINGS.backgroundImage,
       fetchRemoteIcons: parsed.fetchRemoteIcons ?? DEFAULT_SETTINGS.fetchRemoteIcons,
@@ -47,7 +51,7 @@ function readSettings(): AppSettings {
 
 function writeSettings(settings: AppSettings): void {
   try {
-    // 只保存与安全无关的界面偏好，绝不含 secret / 密码
+    // 只保存界面偏好，不含任何账户数据
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
     /* ignore */
@@ -68,8 +72,6 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   });
 
   const [state, setState] = useState<VaultContextValue['state']>({
-    exists: false,
-    unlocked: false,
     accountCount: 0,
     loading: true,
     error: null,
@@ -107,39 +109,48 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const firstFrame = await measureFirstFrame();
       if (cancelled) return;
-      if (firstFrame > TIER_THRESHOLDS.firstFrameBudgetMs) {
-        rememberDegradedTier();
-        applyTierToDocument('b');
-        setTier('b');
-        return;
-      }
-      // 渲染稳定后做一次真实滚动帧率采样
+
+      // 双条件判定：只有「首帧慢」+「帧率也确实低」才降级，
+      // 避免后台标签页节流 / 冷启动噪声造成误降级。
       window.setTimeout(async () => {
         if (cancelled) return;
         const fps = await sampleScrollFps(scrollSampleTarget.current);
         if (cancelled) return;
-        if (fps > 0 && fps < TIER_THRESHOLDS.minScrollFps) {
+
+        const slowFrames = fps > 0 && fps < TIER_THRESHOLDS.minScrollFps;
+        const slowFirstFrame = firstFrame > TIER_THRESHOLDS.firstFrameBudgetMs;
+
+        if (slowFrames || (slowFirstFrame && fps > 0 && fps < 58)) {
           rememberDegradedTier();
           applyTierToDocument('b');
           setTier('b');
         }
-      }, 1400);
+      }, 1600);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  /* ---------------------------------------------------------- settings */
+  /* ---------------------------------------------------------- 主题应用 */
   useEffect(() => {
     writeSettings(settings);
-    document.documentElement.dataset.theme = settings.theme;
+    const root = document.documentElement;
+    // 先加过渡类，再切主题，避免生硬跳变（reduced-motion 时由 CSS 覆盖）
+    root.classList.add('theme-animating');
+    root.dataset.theme = settings.theme;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', settings.theme === 'light' ? '#EEF2F6' : '#07090C');
+    const timer = window.setTimeout(() => root.classList.remove('theme-animating'), 320);
+    return () => window.clearTimeout(timer);
   }, [settings]);
 
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
     setSettings((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setSettings((prev) => ({ ...prev, theme: prev.theme === 'dark' ? 'light' : 'dark' }));
   }, []);
 
   /* --------------------------------------------------------- background */
@@ -193,65 +204,26 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, []);
 
-  /* ------------------------------------------------------- vault status */
-  const refreshStatus = useCallback(async () => {
-    const status = await vault.getVaultStatus();
-    setState((prev) => ({
-      ...prev,
-      exists: status.exists,
-      accountCount: status.exists ? status.accountCount : 0,
-      loading: false,
-    }));
+  /* --------------------------------------------------------- load data */
+  const reloadAccounts = useCallback(async () => {
+    try {
+      const list = await store.loadAccounts();
+      setAccounts(list);
+      setState((prev) => ({ ...prev, accountCount: list.length, loading: false, error: null }));
+    } catch (err) {
+      setState({
+        accountCount: 0,
+        loading: false,
+        error: err instanceof Error ? err.message : '读取本地数据失败',
+      });
+    }
   }, []);
 
   useEffect(() => {
-    void refreshStatus();
-  }, [refreshStatus]);
-
-  const reloadAccounts = useCallback(async () => {
-    if (!vault.isUnlocked()) {
-      setAccounts([]);
-      return;
-    }
-    const list = await vault.loadAccounts();
-    setAccounts(list);
-  }, []);
+    void reloadAccounts();
+  }, [reloadAccounts]);
 
   /* ------------------------------------------------------------ actions */
-  const createVault = useCallback(
-    async (password: string) => {
-      await vault.createVault(password);
-      setAccounts([]);
-      await refreshStatus();
-      setState((prev) => ({ ...prev, unlocked: true, exists: true, accountCount: 0 }));
-    },
-    [refreshStatus],
-  );
-
-  const unlock = useCallback(
-    async (password: string) => {
-      await vault.unlockVault(password);
-      const list = await vault.loadAccounts();
-      setAccounts(list);
-      await refreshStatus();
-      setState((prev) => ({ ...prev, unlocked: true, exists: true, accountCount: list.length }));
-    },
-    [refreshStatus],
-  );
-
-  const lock = useCallback(() => {
-    vault.lockVault();
-    // 立即清空内存中的明文账户
-    setAccounts([]);
-    setState((prev) => ({ ...prev, unlocked: false }));
-  }, []);
-
-  const resetVault = useCallback(async () => {
-    await vault.resetVault();
-    setAccounts([]);
-    setState({ exists: false, unlocked: false, accountCount: 0, loading: false, error: null });
-  }, []);
-
   const addAccounts = useCallback(
     async (drafts: OtpAccount[]) => {
       const startOrder = accounts.length;
@@ -259,17 +231,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         ...accounts,
         ...drafts.map((draft, i) => ({ ...draft, order: startOrder + i })),
       ];
-      await vault.persistAllAccounts(next);
+      await store.saveAll(next);
       setAccounts(next);
-      await refreshStatus();
+      setState((prev) => ({ ...prev, accountCount: next.length }));
     },
-    [accounts, refreshStatus],
+    [accounts],
   );
 
   const updateAccount = useCallback(
     async (account: OtpAccount) => {
       const next = accounts.map((a) => (a.id === account.id ? account : a));
-      await vault.persistAllAccounts(next);
+      await store.saveAll(next);
       setAccounts(next);
     },
     [accounts],
@@ -277,58 +249,39 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const deleteAccount = useCallback(
     async (id: string) => {
-      await vault.removeAccount(id);
       const next = accounts.filter((a) => a.id !== id).map((a, i) => ({ ...a, order: i }));
+      await store.saveAll(next);
       setAccounts(next);
-      await refreshStatus();
+      setState((prev) => ({ ...prev, accountCount: next.length }));
     },
-    [accounts, refreshStatus],
+    [accounts],
   );
 
-  const replaceAccounts = useCallback(
-    async (next: OtpAccount[]) => {
-      const ordered = next.map((a, i) => ({ ...a, order: i }));
-      await vault.persistAllAccounts(ordered);
-      setAccounts(ordered);
-      await refreshStatus();
-    },
-    [refreshStatus],
-  );
-
-  const changePassword = useCallback(async (current: string, next: string) => {
-    await vault.changeMasterPassword(current, next);
+  const replaceAccounts = useCallback(async (next: OtpAccount[]) => {
+    const ordered = next.map((a, i) => ({ ...a, order: i }));
+    await store.saveAll(ordered);
+    setAccounts(ordered);
+    setState((prev) => ({ ...prev, accountCount: ordered.length }));
   }, []);
 
-  /* -------------------------------------------------- auto lock on hide */
-  useEffect(() => {
-    if (!settings.autoLockOnHide) return;
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden' && vault.isUnlocked()) {
-        vault.lockVault();
-        setAccounts([]);
-        setState((prev) => ({ ...prev, unlocked: false }));
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [settings.autoLockOnHide]);
+  const resetVault = useCallback(async () => {
+    await store.removeEverything();
+    setAccounts([]);
+    setState({ accountCount: 0, loading: false, error: null });
+  }, []);
 
   /* ------------------------------------------------- 全局快捷键（可选） */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && vault.isUnlocked() === false) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'l') {
+      // Ctrl/⌘ + Shift + L 切换主题
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'l') {
         event.preventDefault();
-        if (vault.isUnlocked()) {
-          vault.lockVault();
-          setAccounts([]);
-          setState((prev) => ({ ...prev, unlocked: false }));
-        }
+        toggleTheme();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [toggleTheme]);
 
   const value = useMemo<VaultContextValue>(
     () => ({
@@ -338,18 +291,15 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       tier,
       toasts,
       now,
-      createVault,
-      unlock,
-      lock,
       resetVault,
       addAccounts,
       updateAccount,
       deleteAccount,
       replaceAccounts,
       updateSettings,
+      toggleTheme,
       toast,
       dismissToast,
-      changePassword,
       refreshBackground,
       backgroundUrl,
       backgroundReady,
@@ -362,18 +312,15 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       tier,
       toasts,
       now,
-      createVault,
-      unlock,
-      lock,
       resetVault,
       addAccounts,
       updateAccount,
       deleteAccount,
       replaceAccounts,
       updateSettings,
+      toggleTheme,
       toast,
       dismissToast,
-      changePassword,
       refreshBackground,
       backgroundUrl,
       backgroundReady,

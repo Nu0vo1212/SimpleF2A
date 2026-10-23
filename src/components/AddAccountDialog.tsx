@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Camera,
-  ClipboardPaste,
-  Keyboard,
-  Loader2,
-  QrCode,
-  Upload,
-  Wand2,
-} from 'lucide-react';
+import { MorphIcon, icons } from './Icons';
 import { Dialog, Field, Segmented } from './Dialog';
 import { useVault } from '../lib/context';
 import { isOtpAuthUri, isMigrationUri, parseOtpAuthUri } from '../otp/uri';
@@ -118,7 +110,7 @@ export function AddAccountDialog({ open, onClose, editingId }: Props) {
               onClick={() => void commit([pending])}
               disabled={busy}
             >
-              {busy ? <Loader2 size={15} className="spin" aria-hidden="true" /> : null}
+              {busy ? <MorphIcon icon={icons.loader} size={15} className="spin" reducedMotion="user" aria-hidden="true" /> : null}
               {editing ? '保存修改' : '确认添加'}
             </button>
           </div>
@@ -140,12 +132,12 @@ export function AddAccountDialog({ open, onClose, editingId }: Props) {
             onChange={setTab}
             ariaLabel="添加账户方式"
             options={[
-              { value: 'scan', label: '扫码 / 图片', icon: <QrCode size={15} aria-hidden="true" /> },
-              { value: 'uri', label: '粘贴 URI', icon: <ClipboardPaste size={15} aria-hidden="true" /> },
+              { value: 'scan', label: '扫码 / 图片', icon: <MorphIcon icon={icons.qr} size={15} reducedMotion="user" aria-hidden="true" /> },
+              { value: 'uri', label: '粘贴 URI', icon: <MorphIcon icon={icons.paste} size={15} reducedMotion="user" aria-hidden="true" /> },
               {
                 value: 'manual',
                 label: editing ? '编辑字段' : '手动输入',
-                icon: <Keyboard size={15} aria-hidden="true" />,
+                icon: <MorphIcon icon={icons.keyboard} size={15} reducedMotion="user" aria-hidden="true" />,
               },
             ]}
           />
@@ -306,7 +298,7 @@ function ScanPanel({
         <video ref={videoRef} className="scanner__video" muted playsInline aria-label="摄像头预览" />
         {!scanning && (
           <div className="scanner__placeholder">
-            <Camera size={28} aria-hidden="true" />
+            <MorphIcon icon={icons.camera} size={28} reducedMotion="user" aria-hidden="true" />
             <p>对准二维码开始识别</p>
             <span>识别过程完全在本设备完成</span>
           </div>
@@ -321,11 +313,11 @@ function ScanPanel({
           </button>
         ) : (
           <button type="button" className="primary-button" onClick={() => void startScan()} disabled={disabled}>
-            <Camera size={16} aria-hidden="true" /> 开启摄像头扫描
+            <MorphIcon icon={icons.camera} size={16} reducedMotion="user" aria-hidden="true" /> 开启摄像头扫描
           </button>
         )}
         <label className={cx('ghost-button', 'file-button')}>
-          <Upload size={16} aria-hidden="true" /> 上传二维码图片
+          <MorphIcon icon={icons.upload} size={16} reducedMotion="user" aria-hidden="true" /> 上传二维码图片
           <input
             type="file"
             accept="image/*"
@@ -359,7 +351,7 @@ function ScanPanel({
           onClick={() => handleValue(manualText)}
           disabled={!manualText.trim()}
         >
-          <Wand2 size={15} aria-hidden="true" /> 解析
+          <MorphIcon icon={icons.wand} size={15} reducedMotion="user" aria-hidden="true" /> 解析
         </button>
       </details>
     </div>
@@ -436,7 +428,7 @@ function UriPanel({
       </Field>
       <div className="panel__actions">
         <button type="button" className="primary-button" onClick={parse} disabled={!text.trim()}>
-          <Wand2 size={16} aria-hidden="true" /> 解析链接
+          <MorphIcon icon={icons.wand} size={16} reducedMotion="user" aria-hidden="true" /> 解析链接
         </button>
       </div>
 

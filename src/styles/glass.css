@@ -19,13 +19,22 @@
     var(--glass-tint) 42%,
     color-mix(in srgb, var(--glass-tint) 55%, transparent) 100%
   );
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  /* 多层阴影营造"玻璃厚度"：
+     ① 顶部 1px 亮线（受光面）
+     ② 左/右 1px 侧壁
+     ③ 内侧一圈柔和辉光（光线在玻璃内部散射）
+     ④ 底部内侧暗边（厚度感）
+     ⑤ 外部投影 */
   box-shadow:
     inset 0 1px 0 var(--glass-border-top),
     inset 1px 0 0 var(--glass-border-side),
     inset -1px 0 0 var(--glass-border-side-weak),
+    inset 0 -1px 0 var(--glass-bottom-edge),
+    inset 0 0 var(--glass-inner-glow-size) var(--glass-inner-glow),
+    0 1px 2px rgba(0, 0, 0, 0.18),
     var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   transition:
     box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out),
@@ -41,14 +50,18 @@
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.35))
-    saturate(var(--glass-saturate)) brightness(1.18) contrast(1.06);
-  backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(var(--glass-saturate))
-    brightness(1.18) contrast(1.06);
+  /* 折射层的 blur 保持小半径：只做"边缘弯折"，不做整面磨砂，
+     这样背景细节能透过来，玻璃才不会变成一块灰板 */
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5))
+    saturate(calc(var(--glass-saturate) * 1.35)) brightness(var(--glass-refract-brightness))
+    contrast(1.08);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.5))
+    saturate(calc(var(--glass-saturate) * 1.35)) brightness(var(--glass-refract-brightness))
+    contrast(1.08);
   filter: url('#liquid-glass-edge');
   /* 位移只发生在边缘环带：中心保持像素稳定，验证码永不被扭曲 */
-  -webkit-mask-image: radial-gradient(96% 96% at 50% 50%, transparent 52%, #000 96%);
-  mask-image: radial-gradient(96% 96% at 50% 50%, transparent 52%, #000 96%);
+  -webkit-mask-image: radial-gradient(96% 96% at 50% 50%, transparent 50%, #000 94%);
+  mask-image: radial-gradient(96% 96% at 50% 50%, transparent 50%, #000 94%);
   opacity: 1;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
@@ -58,9 +71,9 @@
 .glass--refract {
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--glass-tint) 46%, transparent) 0%,
-    color-mix(in srgb, var(--glass-tint) 26%, transparent) 58%,
-    color-mix(in srgb, var(--glass-tint) 40%, transparent) 100%
+    color-mix(in srgb, var(--glass-tint) 34%, var(--glass-refract-base)) 0%,
+    color-mix(in srgb, var(--glass-tint) 16%, var(--glass-refract-base)) 58%,
+    color-mix(in srgb, var(--glass-tint) 28%, var(--glass-refract-base)) 100%
   );
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -73,14 +86,25 @@
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-  /* 上缘的液态高光：0.5px 白边 + 渐隐，模拟玻璃厚度 */
+  /* 镜面扫光：左上方向的斜向高光 + 上缘渐隐白边，
+     模拟真实玻璃表面反射光源的方向感（参考 1Password / macOS 液态玻璃） */
   background:
     linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.02) 12%,
-      transparent 34%
-    );
+      115deg,
+      var(--glass-sheen) 0%,
+      color-mix(in srgb, var(--glass-sheen) 30%, transparent) 18%,
+      transparent 42%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 10%, transparent 30%);
+  opacity: 1;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* 边缘光晕环：沿圆角内侧描一圈渐变亮线，强化"玻璃边缘厚度" */
+.glass--glow::after {
+  box-shadow:
+    inset 0 0 0 1px transparent,
+    inset 0 0 12px -2px var(--glass-inner-glow);
 }
 
 .glass > * {
@@ -118,10 +142,34 @@
     inset 0 1px 0 color-mix(in srgb, var(--glass-border-top) 100%, white 10%),
     inset 1px 0 0 var(--glass-border-side),
     inset -1px 0 0 var(--glass-border-side-weak),
+    inset 0 -1px 0 var(--glass-bottom-edge),
+    inset 0 0 calc(var(--glass-inner-glow-size) * 1.3) var(--glass-inner-glow),
+    0 1px 2px rgba(0, 0, 0, 0.2),
     var(--glass-shadow-hover);
 }
 .glass--interactive.glass--refract:hover::before {
   opacity: 1;
+}
+/* hover 时镜面扫光更亮（模拟光源角度变化） */
+.glass--interactive:hover::after {
+  background:
+    linear-gradient(
+      115deg,
+      var(--glass-sheen-hover) 0%,
+      color-mix(in srgb, var(--glass-sheen-hover) 34%, transparent) 20%,
+      transparent 46%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.03) 10%, transparent 30%);
+}
+/* 键盘聚焦：等价于 hover 的高亮，另加 outline */
+.glass--interactive:focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--glass-border-top) 100%, white 10%),
+    inset 1px 0 0 var(--glass-border-side),
+    inset -1px 0 0 var(--glass-border-side-weak),
+    inset 0 0 calc(var(--glass-inner-glow-size) * 1.3) var(--glass-inner-glow),
+    var(--glass-shadow-hover);
 }
 
 /* --------------------------------------------------------------------------

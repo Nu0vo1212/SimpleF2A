@@ -11,8 +11,6 @@ export interface ToastItem {
 }
 
 export interface AppSettings {
-  /** 页面隐藏时自动锁定 */
-  autoLockOnHide: boolean;
   /** 主题 */
   theme: 'dark' | 'light';
   /** 背景图开关（关闭后只用渐变） */
@@ -24,36 +22,29 @@ export interface AppSettings {
   fetchRemoteIcons: boolean;
 }
 
-export interface VaultViewState {
-  /** 是否已存在 vault */
-  exists: boolean;
-  /** 是否已解锁 */
-  unlocked: boolean;
+export interface AppViewState {
   accountCount: number;
   loading: boolean;
   error: string | null;
 }
 
 export interface VaultContextValue {
-  state: VaultViewState;
+  state: AppViewState;
   accounts: OtpAccount[];
   settings: AppSettings;
   tier: GlassTier;
   toasts: ToastItem[];
   /** 当前时间戳（每 250ms 更新，用于倒计时平滑） */
   now: number;
-  createVault: (password: string) => Promise<void>;
-  unlock: (password: string) => Promise<void>;
-  lock: () => void;
   resetVault: () => Promise<void>;
   addAccounts: (drafts: OtpAccount[]) => Promise<void>;
   updateAccount: (account: OtpAccount) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   replaceAccounts: (accounts: OtpAccount[]) => Promise<void>;
   updateSettings: (patch: Partial<AppSettings>) => void;
+  toggleTheme: () => void;
   toast: (message: string, kind?: ToastKind) => void;
   dismissToast: (id: string) => void;
-  changePassword: (current: string, next: string) => Promise<void>;
   refreshBackground: () => void;
   backgroundUrl: string | null;
   backgroundReady: boolean;

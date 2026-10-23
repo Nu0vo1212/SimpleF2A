@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { MorphIcon, icons } from './Icons';
 import { cx } from '../lib/utils';
 
 interface DialogProps {
@@ -117,7 +117,7 @@ export function Dialog({
             )}
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label="关闭">
-            <X size={18} aria-hidden="true" />
+            <MorphIcon icon={icons.close} size={18} reducedMotion="user" aria-hidden="true" />
           </button>
         </header>
         <div className="dialog__body">{children}</div>

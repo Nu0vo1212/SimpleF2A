@@ -1,17 +1,16 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Loader2, ShieldCheck } from 'lucide-react';
 import { useVault } from './lib/context';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { GlassFilters } from './components/GlassFilters';
 import { ToastHost } from './components/ToastHost';
 import { TopBar } from './components/TopBar';
-import { LockScreen } from './components/LockScreen';
 import { AccountList } from './components/AccountList';
 import { EmptyState } from './components/EmptyState';
 import { AddAccountDialog } from './components/AddAccountDialog';
 import { SettingsDialog } from './components/SettingsDialog';
 import { ExportAccountDialog } from './components/ExportAccountDialog';
 import { DeleteAccountConfirm } from './components/DangerDialogs';
+import { MorphIcon, icons } from './components/Icons';
 import type { OtpAccount } from './otp/types';
 
 export default function App() {
@@ -42,8 +41,14 @@ export default function App() {
     if (state.loading) {
       return (
         <div className="loading-state" role="status" aria-live="polite">
-          <Loader2 size={22} className="spin" aria-hidden="true" />
-          <span>正在读取本地保险库…</span>
+          <MorphIcon
+            icon={icons.loader}
+            size={22}
+            className="spin"
+            reducedMotion="user"
+            aria-hidden="true"
+          />
+          <span>正在读取本地数据…</span>
         </div>
       );
     }
@@ -66,50 +71,51 @@ export default function App() {
       <GlassFilters />
       <BackgroundLayer />
 
-      {!state.exists ? (
-        <LockScreen mode="create" />
-      ) : !state.unlocked ? (
-        <LockScreen mode="unlock" />
-      ) : (
-        <div className="app-shell">
-          <TopBar
-            onAdd={openAdd}
-            onSettings={() => setSettingsOpen(true)}
-            query={query}
-            onQueryChange={setQuery}
-          />
+      <div className="app-shell">
+        <TopBar
+          onAdd={openAdd}
+          onSettings={() => setSettingsOpen(true)}
+          query={query}
+          onQueryChange={setQuery}
+        />
 
-          <main className="app-main" id="main" tabIndex={-1}>
-            <div className="app-main__inner">
-              <div className="app-hero">
-                <div className="app-hero__text">
-                  <h1 className="app-hero__title">你的验证码</h1>
-                  <p className="app-hero__subtitle">
-                    <ShieldCheck size={14} aria-hidden="true" />
-                    全部在本设备离线生成，密钥经 AES-256-GCM 加密后仅存储于本机
-                  </p>
-                </div>
-                {accounts.length > 0 && (
-                  <div className="app-hero__count" aria-live="polite">
-                    <span className="app-hero__count-num">{accounts.length}</span>
-                    <span className="app-hero__count-label">个账户</span>
-                  </div>
-                )}
+        <main className="app-main" id="main" tabIndex={-1}>
+          <div className="app-main__inner">
+            <div className="app-hero">
+              <div className="app-hero__text">
+                <h1 className="app-hero__title">你的验证码</h1>
+                <p className="app-hero__subtitle">
+                  <MorphIcon
+                    icon={icons.shield}
+                    size={14}
+                    reducedMotion="user"
+                    aria-hidden="true"
+                  />
+                  全部在本设备离线生成，账户数据仅保存在本机浏览器
+                </p>
               </div>
-
-              {mainContent}
-
-              <footer className="app-footer">
-                <span>SimpleF2A · 零服务器 · 本地加密</span>
-                <span className="app-footer__dot" aria-hidden="true">
-                  ·
-                </span>
-                <span>按 Ctrl/⌘ + L 快速锁定</span>
-              </footer>
+              {accounts.length > 0 && (
+                <div className="app-hero__count" aria-live="polite">
+                  <span className="app-hero__count-num">{accounts.length}</span>
+                  <span className="app-hero__count-label">个账户</span>
+                </div>
+              )}
             </div>
-          </main>
-        </div>
-      )}
+
+            {mainContent}
+
+            <footer className="app-footer">
+              <span>SimpleF2A · 零服务器 · 本地存储</span>
+              <span className="app-footer__dot" aria-hidden="true">
+                ·
+              </span>
+              <span>
+                按 <kbd className="kbd">Ctrl/⌘ + Shift + L</kbd> 切换深浅色
+              </span>
+            </footer>
+          </div>
+        </main>
+      </div>
 
       <AddAccountDialog open={addOpen} onClose={closeAdd} editingId={editingId} />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />

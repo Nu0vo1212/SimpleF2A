@@ -1,4 +1,4 @@
-import { Plus, ShieldCheck, QrCode, Keyboard } from 'lucide-react';
+import { MorphIcon, icons } from './Icons';
 import { useVault } from '../lib/context';
 
 /**
@@ -10,7 +10,7 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
     <div className="empty-state">
       <div className="empty-state__art" aria-hidden="true">
         <div className={`empty-state__orb ${tier !== 'c' ? 'glass glass--refract' : 'glass'}`}>
-          <ShieldCheck size={34} />
+          <MorphIcon icon={icons.shield} size={34} reducedMotion="user" aria-hidden="true" />
         </div>
         <div className="empty-state__ring empty-state__ring--1" />
         <div className="empty-state__ring empty-state__ring--2" />
@@ -25,18 +25,18 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
       </p>
 
       <button type="button" className="primary-button primary-button--lg" onClick={onAdd}>
-        <Plus size={18} aria-hidden="true" /> 添加第一个账户
+        <MorphIcon icon={icons.add} size={18} reducedMotion="user" aria-hidden="true" /> 添加第一个账户
       </button>
 
       <ul className="empty-state__ways">
         <li>
-          <QrCode size={16} aria-hidden="true" /> 扫描二维码
+          <MorphIcon icon={icons.qr} size={16} reducedMotion="user" aria-hidden="true" /> 扫描二维码
         </li>
         <li>
-          <Keyboard size={16} aria-hidden="true" /> 手动输入密钥
+          <MorphIcon icon={icons.keyboard} size={16} reducedMotion="user" aria-hidden="true" /> 手动输入密钥
         </li>
         <li>
-          <ShieldCheck size={16} aria-hidden="true" /> 导入迁移备份
+          <MorphIcon icon={icons.shield} size={16} reducedMotion="user" aria-hidden="true" /> 导入迁移备份
         </li>
       </ul>
     </div>

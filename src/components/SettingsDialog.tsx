@@ -1,16 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import {
-  Download,
-  FileJson,
-  KeyRound,
-  Loader2,
-  Lock,
-  ShieldAlert,
-  ShieldCheck,
-  Upload,
-  Trash2,
-} from 'lucide-react';
 import { Dialog, Field } from './Dialog';
+import { MorphIcon, icons } from './Icons';
 import { useVault } from '../lib/context';
 import {
   backupFileName,
@@ -21,25 +11,15 @@ import {
   parseBackupJson,
   type ImportResult,
 } from '../vault/backup';
-import { downloadFile, readFileAsText } from '../lib/utils';
+import { downloadFile, readFileAsText, cx } from '../lib/utils';
 import { PlaintextExportConfirm, ResetVaultConfirm } from './DangerDialogs';
-import { cx } from '../lib/utils';
 
-type Section = 'theme' | 'security' | 'backup' | 'about';
+type Section = 'appearance' | 'backup' | 'about';
 
-/** 设置：主题、自动锁定、备份导出/导入、主密码、重置 */
+/** 设置：外观（主题/背景/图标）、备份导出/导入、危险操作、关于 */
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const {
-    settings,
-    updateSettings,
-    accounts,
-    toast,
-    changePassword,
-    state,
-    tier,
-    addAccounts,
-  } = useVault();
-  const [section, setSection] = useState<Section>('backup');
+  const { settings, updateSettings, accounts, toast, state, tier, addAccounts } = useVault();
+  const [section, setSection] = useState<Section>('appearance');
 
   const [exporting, setExporting] = useState(false);
   const [confirmPlain, setConfirmPlain] = useState(false);
@@ -54,12 +34,9 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [importBusy, setImportBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const [currentPw, setCurrentPw] = useState('');
-  const [nextPw, setNextPw] = useState('');
-  const [pwBusy, setPwBusy] = useState(false);
-
   const accountCount = accounts.length;
-  const tierLabel = tier === 'a' ? 'Tier A · 完整折射' : tier === 'b' ? 'Tier B · 纯 CSS 玻璃' : 'Tier C · 极简';
+  const tierLabel =
+    tier === 'a' ? 'Tier A · 完整折射' : tier === 'b' ? 'Tier B · 纯 CSS 玻璃' : 'Tier C · 极简';
 
   const doEncryptedExport = async () => {
     if (encryptPassword.length < 8) {
@@ -83,7 +60,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     setExporting(true);
     try {
       downloadFile(backupFileName(false), backupToJson(buildPlainBackup(accounts)));
-      toast('明文备份已下载，请尽快妥善保存', 'warning');
+      toast('明文备份已下载，请妥善保存', 'warning');
     } finally {
       setExporting(false);
     }
@@ -95,11 +72,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     setImportNeedsPassword(false);
     try {
       const parsed = parseBackupJson(text);
-      if (parsed.needsPassword) {
-        setImportNeedsPassword(true);
-      } else {
-        setImportPreview(parsed);
-      }
+      if (parsed.needsPassword) setImportNeedsPassword(true);
+      else setImportPreview(parsed);
     } catch (err) {
       toast(err instanceof Error ? err.message : '备份解析失败', 'danger');
     }
@@ -115,7 +89,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         toast('备份中没有可导入的账户', 'warning');
         return;
       }
-      // 重新分配 id，避免与现有账户冲突
       const fresh = result.accounts.map((a) => ({ ...a, id: crypto.randomUUID() }));
       await addAccounts(fresh);
       toast(`已导入 ${fresh.length} 个账户`, 'success');
@@ -130,28 +103,12 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     }
   };
 
-  const doChangePassword = async () => {
-    setPwBusy(true);
-    try {
-      await changePassword(currentPw, nextPw);
-      setCurrentPw('');
-      setNextPw('');
-      toast('主密码已更新，所有记录已用新密钥重新加密', 'success');
-    } catch (err) {
-      toast(err instanceof Error ? err.message : '修改失败', 'danger');
-    } finally {
-      setPwBusy(false);
-    }
-  };
-
   const sections = useMemo(
-    () =>
-      [
-        { id: 'backup' as const, label: '备份与迁移', icon: <FileJson size={15} /> },
-        { id: 'security' as const, label: '安全', icon: <ShieldCheck size={15} /> },
-        { id: 'theme' as const, label: '外观', icon: <Lock size={15} /> },
-        { id: 'about' as const, label: '关于', icon: <ShieldAlert size={15} /> },
-      ] satisfies Array<{ id: Section; label: string; icon: React.ReactNode }>,
+    () => [
+      { id: 'appearance' as const, label: '外观', icon: icons.palette },
+      { id: 'backup' as const, label: '备份与迁移', icon: icons.fileJson },
+      { id: 'about' as const, label: '关于', icon: icons.shieldAlert },
+    ],
     [],
   );
 
@@ -168,28 +125,123 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 onClick={() => setSection(item.id)}
                 aria-current={section === item.id}
               >
-                {item.icon}
+                <MorphIcon icon={item.icon} size={15} reducedMotion="user" aria-hidden="true" />
                 {item.label}
               </button>
             ))}
             <div className="settings__meta">
               <span>{accountCount} 个账户</span>
-              <span>{state.exists ? '已加密存储' : '未创建'}</span>
+              <span>本地浏览器存储</span>
               <span>{tierLabel}</span>
             </div>
           </nav>
 
           <div className="settings__panel">
+            {section === 'appearance' && (
+              <div className="settings__group">
+                <h3 className="settings__title">主题</h3>
+                <p className="settings__desc">深浅色可随时切换，玻璃材质会随主题重新配比。</p>
+                <div className="theme-cards" role="radiogroup" aria-label="主题">
+                  {[
+                    { id: 'dark' as const, label: '深色', hint: '暗色基底 · 高对比', icon: icons.moon },
+                    { id: 'light' as const, label: '浅色', hint: '乳浊玻璃 · 柔和', icon: icons.sun },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={settings.theme === opt.id}
+                      className={cx(
+                        'theme-card',
+                        `theme-card--${opt.id}`,
+                        settings.theme === opt.id && 'theme-card--active',
+                      )}
+                      onClick={() => updateSettings({ theme: opt.id })}
+                    >
+                      <span className="theme-card__swatch" aria-hidden="true">
+                        <MorphIcon
+                          icon={opt.icon}
+                          size={18}
+                          spring="bouncy"
+                          reducedMotion="user"
+                          aria-hidden="true"
+                        />
+                      </span>
+                      <span className="theme-card__text">
+                        <span className="theme-card__label">{opt.label}</span>
+                        <span className="theme-card__hint">{opt.hint}</span>
+                      </span>
+                      {settings.theme === opt.id && (
+                        <MorphIcon
+                          icon={icons.check}
+                          size={14}
+                          className="theme-card__check"
+                          reducedMotion="user"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <h3 className="settings__title settings__title--sub">背景</h3>
+                <label className="toggle-row">
+                  <span>
+                    <span className="toggle-row__label">
+                      <MorphIcon
+                        icon={icons.background}
+                        size={14}
+                        reducedMotion="user"
+                        aria-hidden="true"
+                      />{' '}
+                      使用随机图片背景
+                    </span>
+                    <span className="toggle-row__desc">
+                      关闭后仅保留渐变与光斑，可减少流量与 GPU 合成开销。
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="switch"
+                    checked={settings.backgroundImage}
+                    onChange={(e) => updateSettings({ backgroundImage: e.target.checked })}
+                  />
+                </label>
+
+                <h3 className="settings__title settings__title--sub">服务图标</h3>
+                <label className="toggle-row">
+                  <span>
+                    <span className="toggle-row__label">联网获取服务图标</span>
+                    <span className="toggle-row__desc">
+                      GitHub、Steam、Claude 等常见服务使用内置图标，无需联网。开启后，未收录的服务会向
+                      DuckDuckGo / Google 图标服务请求图标——这会暴露你使用了哪些服务。
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="switch"
+                    checked={settings.fetchRemoteIcons}
+                    onChange={(e) => updateSettings({ fetchRemoteIcons: e.target.checked })}
+                  />
+                </label>
+
+                <h3 className="settings__title settings__title--sub">玻璃质量</h3>
+                <p className="settings__desc">
+                  当前：<strong>{tierLabel}</strong>。层级由设备能力、系统偏好与实测帧率自动决定，不可手动切换。
+                </p>
+              </div>
+            )}
+
             {section === 'backup' && (
               <div className="settings__group">
                 <h3 className="settings__title">导出备份</h3>
                 <p className="settings__desc">
-                  备份文件包含全部账户密钥。推荐使用密码加密模式；加密备份可重新导入本应用或解码后迁移到其它验证器。
+                  备份文件包含全部账户密钥。推荐使用密码加密模式，便于安全保存或迁移到其它验证器。
                 </p>
 
                 <div className="settings__card">
                   <div className="settings__card-head">
-                    <KeyRound size={16} aria-hidden="true" />
+                    <MorphIcon icon={icons.shield} size={16} reducedMotion="user" aria-hidden="true" />
                     <span>密码加密的 JSON（推荐）</span>
                   </div>
                   <div className="input-row">
@@ -208,7 +260,13 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                       onClick={() => void doEncryptedExport()}
                       disabled={encrypting || accounts.length === 0}
                     >
-                      {encrypting ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <Download size={15} aria-hidden="true" />}
+                      <MorphIcon
+                        icon={encrypting ? icons.loader : icons.download}
+                        size={15}
+                        className={encrypting ? 'spin' : undefined}
+                        reducedMotion="user"
+                        aria-hidden="true"
+                      />
                       导出
                     </button>
                   </div>
@@ -216,7 +274,12 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
 
                 <div className="settings__card settings__card--warn">
                   <div className="settings__card-head">
-                    <ShieldAlert size={16} aria-hidden="true" />
+                    <MorphIcon
+                      icon={icons.shieldAlert}
+                      size={16}
+                      reducedMotion="user"
+                      aria-hidden="true"
+                    />
                     <span>明文 JSON（等同于裸密钥）</span>
                   </div>
                   <button
@@ -225,7 +288,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     onClick={() => setConfirmPlain(true)}
                     disabled={exporting || accounts.length === 0}
                   >
-                    <Download size={15} aria-hidden="true" /> 导出明文备份
+                    <MorphIcon icon={icons.download} size={15} reducedMotion="user" aria-hidden="true" />
+                    导出明文备份
                   </button>
                 </div>
 
@@ -235,7 +299,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 </p>
                 <div className="settings__card">
                   <label className="ghost-button file-button">
-                    <Upload size={15} aria-hidden="true" /> 选择 JSON 备份文件
+                    <MorphIcon icon={icons.upload} size={15} reducedMotion="user" aria-hidden="true" />
+                    选择 JSON 备份文件
                     <input
                       ref={fileInput}
                       type="file"
@@ -243,17 +308,14 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                       className="sr-only"
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
-                        if (file) {
-                          const text = await readFileAsText(file);
-                          handleImportText(text);
-                        }
+                        if (file) handleImportText(await readFileAsText(file));
                         e.target.value = '';
                       }}
                     />
                   </label>
 
                   {importNeedsPassword && (
-                    <Field label="备份密码" htmlFor="import-pw" hint="该备份由主密码/备份密码加密。">
+                    <Field label="备份密码" htmlFor="import-pw" hint="该备份由密码加密。">
                       <input
                         id="import-pw"
                         className="text-input"
@@ -269,7 +331,9 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     <div className="import-preview">
                       <p>
                         识别到 <strong>{importPreview.accounts.length}</strong> 个账户
-                        {importPreview.skipped > 0 && <span>（跳过 {importPreview.skipped} 条无效记录）</span>}
+                        {importPreview.skipped > 0 && (
+                          <span>（跳过 {importPreview.skipped} 条无效记录）</span>
+                        )}
                         <span className="badge badge--subtle">{formatSource(importPreview.source)}</span>
                       </p>
                       <ul className="import-preview__list">
@@ -292,134 +356,32 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                       onClick={() => void doImport()}
                       disabled={importBusy || (importNeedsPassword && !importPassword)}
                     >
-                      {importBusy ? <Loader2 size={15} className="spin" aria-hidden="true" /> : null}
-                      导入到 vault
+                      {importBusy && (
+                        <MorphIcon
+                          icon={icons.loader}
+                          size={15}
+                          className="spin"
+                          reducedMotion="user"
+                          aria-hidden="true"
+                        />
+                      )}
+                      导入到本地
                     </button>
                   )}
                 </div>
-              </div>
-            )}
 
-            {section === 'security' && (
-              <div className="settings__group">
-                <h3 className="settings__title">自动锁定</h3>
-                <label className="toggle-row">
-                  <span>
-                    <span className="toggle-row__label">页面隐藏时自动锁定</span>
-                    <span className="toggle-row__desc">
-                      切换到其它标签页或最小化窗口时立刻清除内存中的密钥。建议保持开启。
-                    </span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="switch"
-                    checked={settings.autoLockOnHide}
-                    onChange={(e) => updateSettings({ autoLockOnHide: e.target.checked })}
-                  />
-                </label>
-
-                <h3 className="settings__title settings__title--sub">修改主密码</h3>
+                <h3 className="settings__title settings__title--sub">清空数据</h3>
                 <p className="settings__desc">
-                  使用旧主密码解出全部记录，再用新密码重新派生密钥并加密写回。
+                  删除本机保存的全部账户。请先导出备份，此操作不可恢复。
                 </p>
-                <div className="settings__card">
-                  <Field label="当前主密码" htmlFor="cur-pw">
-                    <input
-                      id="cur-pw"
-                      className="text-input"
-                      type="password"
-                      value={currentPw}
-                      onChange={(e) => setCurrentPw(e.target.value)}
-                      autoComplete="current-password"
-                    />
-                  </Field>
-                  <Field label="新主密码" htmlFor="next-pw" hint="至少 8 个字符。忘记将无法恢复。">
-                    <input
-                      id="next-pw"
-                      className="text-input"
-                      type="password"
-                      value={nextPw}
-                      onChange={(e) => setNextPw(e.target.value)}
-                      autoComplete="new-password"
-                    />
-                  </Field>
-                  <button
-                    type="button"
-                    className="primary-button"
-                    onClick={() => void doChangePassword()}
-                    disabled={pwBusy || !currentPw || nextPw.length < 8}
-                  >
-                    {pwBusy ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <KeyRound size={15} aria-hidden="true" />}
-                    更新主密码
-                  </button>
-                </div>
-
-                <h3 className="settings__title settings__title--sub">销毁数据</h3>
-                <p className="settings__desc">
-                  重置会删除本设备上的整个加密 vault。请先导出备份。
-                </p>
-                <button type="button" className="ghost-button ghost-button--danger" onClick={() => setConfirmReset(true)}>
-                  <Trash2 size={15} aria-hidden="true" /> 重置保险库
+                <button
+                  type="button"
+                  className="ghost-button ghost-button--danger"
+                  onClick={() => setConfirmReset(true)}
+                >
+                  <MorphIcon icon={icons.trash} size={15} reducedMotion="user" aria-hidden="true" />
+                  清空全部账户
                 </button>
-              </div>
-            )}
-
-            {section === 'theme' && (
-              <div className="settings__group">
-                <h3 className="settings__title">主题</h3>
-                <div className="chip-row" role="radiogroup" aria-label="主题">
-                  {(['dark', 'light'] as const).map((theme) => (
-                    <button
-                      key={theme}
-                      type="button"
-                      role="radio"
-                      aria-checked={settings.theme === theme}
-                      className={cx('chip', settings.theme === theme && 'chip--active')}
-                      onClick={() => updateSettings({ theme })}
-                    >
-                      {theme === 'dark' ? '深色' : '浅色'}
-                    </button>
-                  ))}
-                </div>
-
-                <h3 className="settings__title settings__title--sub">背景</h3>
-                <label className="toggle-row">
-                  <span>
-                    <span className="toggle-row__label">使用随机图片背景</span>
-                    <span className="toggle-row__desc">
-                      关闭后仅保留渐变与光斑，可减少流量与 GPU 合成开销。
-                    </span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="switch"
-                    checked={settings.backgroundImage}
-                    onChange={(e) => updateSettings({ backgroundImage: e.target.checked })}
-                  />
-                </label>
-
-                <h3 className="settings__title settings__title--sub">服务图标</h3>
-                <label className="toggle-row">
-                  <span>
-                    <span className="toggle-row__label">联网获取服务图标</span>
-                    <span className="toggle-row__desc">
-                      GitHub、Steam、Claude 等常见服务使用内置图标，无需联网。开启后，未收录的服务会向
-                      DuckDuckGo / Google 图标服务请求真实网站图标——这会让第三方得知你使用了哪些服务。
-                      关闭后仅显示内置图标或首字母。
-                    </span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="switch"
-                    checked={settings.fetchRemoteIcons}
-                    onChange={(e) => updateSettings({ fetchRemoteIcons: e.target.checked })}
-                  />
-                </label>
-
-                <h3 className="settings__title settings__title--sub">玻璃质量</h3>
-                <p className="settings__desc">
-                  当前：<strong>{tierLabel}</strong>。层级由设备能力、系统偏好与实测帧率自动决定，不可手动切换。
-                </p>
               </div>
             )}
 
@@ -428,24 +390,28 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 <h3 className="settings__title">SimpleF2A</h3>
                 <dl className="about-list">
                   <div>
-                    <dt>加密</dt>
-                    <dd>AES-256-GCM · PBKDF2-SHA256 · 600,000 迭代</dd>
+                    <dt>存储</dt>
+                    <dd>浏览器 IndexedDB · 数据不出本机</dd>
                   </div>
                   <div>
-                    <dt>存储</dt>
-                    <dd>IndexedDB（仅密文）· 主密码不落盘</dd>
+                    <dt>账户数</dt>
+                    <dd>{state.accountCount} 个</dd>
                   </div>
                   <div>
                     <dt>网络</dt>
-                    <dd>无服务器 · 不上传密钥 · 仅加载背景图片</dd>
+                    <dd>无服务器 · 仅加载背景图与服务图标</dd>
                   </div>
                   <div>
                     <dt>OTP</dt>
                     <dd>TOTP / HOTP / Steam / Yandex / MOTP</dd>
                   </div>
+                  <div>
+                    <dt>快捷键</dt>
+                    <dd>Ctrl/⌘ + Shift + L 切换深浅色</dd>
+                  </div>
                 </dl>
                 <p className="settings__desc">
-                  详见仓库中的 SECURITY.md（威胁模型）与 README.md（部署与性能说明）。
+                  详见仓库中的 SECURITY.md（使用边界）与 README.md（部署与性能说明）。
                 </p>
               </div>
             )}

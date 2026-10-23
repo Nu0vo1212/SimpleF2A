@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
+import { MorphIcon, icons } from './Icons';
 import { useVault } from '../lib/context';
 
 /** Toast 容器：右下角（移动端底部），滑入动画，aria-live 播报 */
@@ -8,13 +8,13 @@ export function ToastHost() {
   const iconFor = (kind: string) => {
     switch (kind) {
       case 'success':
-        return <CheckCircle2 size={18} aria-hidden="true" />;
+        return <MorphIcon icon={icons.shield} size={18} reducedMotion="user" aria-hidden="true" />;
       case 'warning':
-        return <AlertTriangle size={18} aria-hidden="true" />;
+        return <MorphIcon icon={icons.warning} size={18} reducedMotion="user" aria-hidden="true" />;
       case 'danger':
-        return <XCircle size={18} aria-hidden="true" />;
+        return <MorphIcon icon={icons.close} size={18} reducedMotion="user" aria-hidden="true" />;
       default:
-        return <Info size={18} aria-hidden="true" />;
+        return <MorphIcon icon={icons.sparkles} size={18} reducedMotion="user" aria-hidden="true" />;
     }
   };
 
@@ -30,7 +30,7 @@ export function ToastHost() {
             onClick={() => dismissToast(t.id)}
             aria-label="关闭提示"
           >
-            <X size={14} aria-hidden="true" />
+            <MorphIcon icon={icons.close} size={14} reducedMotion="user" aria-hidden="true" />
           </button>
         </div>
       ))}

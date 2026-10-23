@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { MorphIcon, icons } from './Icons';
 import { Dialog } from './Dialog';
 import { useVault } from '../lib/context';
 
@@ -60,7 +60,7 @@ export function DangerConfirm({
             onClick={() => void run()}
             disabled={!canConfirm || busy}
           >
-            {busy ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <Trash2 size={15} aria-hidden="true" />}
+            {busy ? <MorphIcon icon={icons.loader} size={15} className="spin" reducedMotion="user" aria-hidden="true" /> : <MorphIcon icon={icons.trash} size={15} reducedMotion="user" aria-hidden="true" />}
             {confirmLabel}
           </button>
         </>
@@ -68,7 +68,7 @@ export function DangerConfirm({
     >
       <div className="danger-body">
         <span className="danger-icon" aria-hidden="true">
-          <AlertTriangle size={20} />
+          <MorphIcon icon={icons.warning} size={20} reducedMotion="user" aria-hidden="true" />
         </span>
         <p className="danger-text">{description}</p>
       </div>

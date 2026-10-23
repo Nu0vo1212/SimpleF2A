@@ -2,6 +2,113 @@
    SimpleF2A · Components
    ========================================================================== */
 
+/* ------------------------------------------------------------ 主题切换 */
+/* 切换瞬间给全局加一层颜色过渡，避免生硬跳变；reduced-motion 下由全局规则覆盖 */
+.theme-animating,
+.theme-animating *,
+.theme-animating *::before,
+.theme-animating *::after {
+  transition:
+    background-color 260ms var(--ease-out),
+    border-color 260ms var(--ease-out),
+    color 260ms var(--ease-out),
+    box-shadow 260ms var(--ease-out),
+    fill 260ms var(--ease-out) !important;
+}
+
+/* 顶栏主题按钮：图标本身靠 morphicons 形变，这里只做轻微旋转反馈 */
+.theme-toggle {
+  position: relative;
+  overflow: hidden;
+}
+.theme-toggle svg {
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.theme-toggle:hover svg {
+  transform: rotate(18deg);
+}
+
+/* 设置里的主题选择卡片 */
+.theme-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.theme-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  text-align: left;
+  border: 1px solid var(--glass-hairline);
+  background: color-mix(in srgb, var(--glass-tint) 50%, transparent);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+.theme-card:hover {
+  border-color: var(--glass-border-top);
+  transform: translateY(-1px);
+}
+.theme-card--active {
+  border-color: var(--accent-ring);
+  background: var(--accent-dim);
+}
+.theme-card__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  border: 1px solid var(--glass-hairline);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+/* 色板示意两种主题的实际观感 */
+.theme-card--dark .theme-card__swatch {
+  color: #cbd5e1;
+  background: linear-gradient(145deg, #1e2630, #0b1015);
+}
+.theme-card--light .theme-card__swatch {
+  color: #334155;
+  background: linear-gradient(145deg, #ffffff, #dfe6ee);
+}
+.theme-card__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.theme-card__label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.theme-card__hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.theme-card__check {
+  flex-shrink: 0;
+  color: var(--accent-strong);
+}
+
+/* 行内快捷键标记 */
+.kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-family: var(--code-font);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--glass-tint) 90%, transparent);
+  border: 1px solid var(--glass-hairline);
+}
+
 /* ------------------------------------------------------------------ 按钮 */
 .primary-button {
   display: inline-flex;

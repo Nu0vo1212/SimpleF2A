@@ -1,19 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Check,
-  Copy,
-  Download,
-  MoreHorizontal,
-  Pencil,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react';
 import type { OtpAccount } from '../otp/types';
 import { useVault } from '../lib/context';
 import { copyText, cx, formatCode, OTP_TYPE_LABELS } from '../lib/utils';
 import { hotpAt } from '../otp/engine';
 import { isTimeBased } from '../otp/engine';
 import { ServiceAvatar } from './ServiceAvatar';
+import { MorphIcon, icons } from './Icons';
 
 interface Props {
   account: OtpAccount;
@@ -148,7 +140,7 @@ export function AccountCard({
               setMenuOpen((v) => !v);
             }}
           >
-            <MoreHorizontal size={18} aria-hidden="true" />
+            <MorphIcon icon={icons.more} size={18} reducedMotion="user" aria-hidden="true" />
           </button>
           {menuOpen && (
             <div className="menu glass" role="menu">
@@ -161,7 +153,7 @@ export function AccountCard({
                   onEdit();
                 }}
               >
-                <Pencil size={15} aria-hidden="true" /> 编辑账户
+                <MorphIcon icon={icons.edit} size={15} reducedMotion="user" aria-hidden="true" /> 编辑账户
               </button>
               <button
                 type="button"
@@ -172,7 +164,7 @@ export function AccountCard({
                   onExport();
                 }}
               >
-                <Download size={15} aria-hidden="true" /> 导出 URI / 二维码
+                <MorphIcon icon={icons.download} size={15} reducedMotion="user" aria-hidden="true" /> 导出 URI / 二维码
               </button>
               <button
                 type="button"
@@ -183,7 +175,7 @@ export function AccountCard({
                   onDelete();
                 }}
               >
-                <Trash2 size={15} aria-hidden="true" /> 删除账户
+                <MorphIcon icon={icons.trash} size={15} reducedMotion="user" aria-hidden="true" /> 删除账户
               </button>
             </div>
           )}
@@ -241,7 +233,7 @@ export function AccountCard({
             onClick={handleHotpNext}
             disabled={busy}
           >
-            <RefreshCw size={14} aria-hidden="true" />
+            <MorphIcon icon={icons.refresh} size={14} reducedMotion="user" aria-hidden="true" />
             {busy ? '生成中…' : '生成下一个'}
           </button>
         ) : (
@@ -258,7 +250,14 @@ export function AccountCard({
           }}
           aria-label={copied ? '已复制' : '复制验证码'}
         >
-          {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+          {/* 复制 → 对勾：morphicons 在两条路径之间做 spring 形变 */}
+          <MorphIcon
+            icon={copied ? icons.check : icons.copy}
+            size={15}
+            spring="bouncy"
+            reducedMotion="user"
+            aria-hidden="true"
+          />
           <span>{copied ? '已复制' : '复制'}</span>
         </button>
       </footer>

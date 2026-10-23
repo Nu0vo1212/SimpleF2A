@@ -31,8 +31,12 @@ export const TIER_THRESHOLDS = {
   minCores: 4,
   /** 低于该内存（GB）视为低端设备 */
   minDeviceMemory: 4,
-  /** 首帧（DOMContentLoaded → rAF 回调）超过该毫秒数则降级 */
-  firstFrameBudgetMs: 260,
+  /**
+   * 首帧（挂载 → 首次 rAF）超过该毫秒数则降级。
+   * 注意：首帧会受后台标签页节流、无头浏览器、冷启动影响，
+   * 单次偶发不应判死刑，因此配合 minScrollFps 双重确认。
+   */
+  firstFrameBudgetMs: 600,
   /** 滚动采样帧率低于该值则降级到 Tier B */
   minScrollFps: 45,
   /** 采样帧数 */
