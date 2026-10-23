@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Copy,
@@ -10,9 +10,10 @@ import {
 } from 'lucide-react';
 import type { OtpAccount } from '../otp/types';
 import { useVault } from '../lib/context';
-import { copyText, cx, derivedHue, formatCode, initialsOf, OTP_TYPE_LABELS } from '../lib/utils';
+import { copyText, cx, formatCode, OTP_TYPE_LABELS } from '../lib/utils';
 import { hotpAt } from '../otp/engine';
 import { isTimeBased } from '../otp/engine';
+import { ServiceAvatar } from './ServiceAvatar';
 
 interface Props {
   account: OtpAccount;
@@ -45,15 +46,6 @@ export function AccountCard({
   const menuRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
   const copyTimer = useRef<number | null>(null);
-
-  const avatar = useMemo(() => {
-    const seed = account.issuer || account.account;
-    const { hue, saturation, lightness } = derivedHue(seed);
-    return {
-      background: `linear-gradient(140deg, hsl(${hue} ${saturation}% ${lightness}%), hsl(${(hue + 32) % 360} ${saturation}% ${Math.max(24, lightness - 14)}%))`,
-      label: initialsOf(account.issuer || account.account),
-    };
-  }, [account.issuer, account.account]);
 
   const showCopied = () => {
     setCopied(true);
@@ -135,9 +127,7 @@ export function AccountCard({
       }}
     >
       <header className="account-card__head">
-        <span className="account-card__avatar" style={{ background: avatar.background }} aria-hidden="true">
-          {avatar.label}
-        </span>
+        <ServiceAvatar account={account} />
         <div className="account-card__identity">
           <h3 className="account-card__issuer" title={account.issuer}>
             {account.issuer || '未命名服务'}

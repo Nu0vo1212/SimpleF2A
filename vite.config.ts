@@ -14,10 +14,10 @@ const CSP = [
   "script-src 'self'",
   // 样式全部来自打包产物，禁止内联样式表
   "style-src 'self'",
-  // 背景图片 API 会 302 跳转到自己的图片 CDN，两个域名都要放行
-  'img-src \'self\' data: blob: https://api.mtyqx.cn https://api.img.mtyqx.cn https://api.dujin.org https://www.dmoe.cc',
+  // 背景图片 API 会 302 跳转到自己的图片 CDN；服务图标来自第三方 favicon 服务
+  'img-src \'self\' data: blob: https://api.mtyqx.cn https://api.img.mtyqx.cn https://api.dujin.org https://www.dmoe.cc https://icons.duckduckgo.com https://www.google.com',
   "font-src 'self' data:",
-  "connect-src 'self' https://api.mtyqx.cn https://api.img.mtyqx.cn https://api.dujin.org https://www.dmoe.cc",
+  "connect-src 'self' https://api.mtyqx.cn https://api.img.mtyqx.cn https://api.dujin.org https://www.dmoe.cc https://icons.duckduckgo.com https://www.google.com",
   "manifest-src 'self'",
   "worker-src 'self' blob:",
   "object-src 'none'",

@@ -17,6 +17,11 @@ export interface AppSettings {
   theme: 'dark' | 'light';
   /** 背景图开关（关闭后只用渐变） */
   backgroundImage: boolean;
+  /**
+   * 联网抓取服务图标（favicon）。
+   * 关闭后仅使用内置品牌图标与首字母头像，不向第三方发起任何图标请求。
+   */
+  fetchRemoteIcons: boolean;
 }
 
 export interface VaultViewState {

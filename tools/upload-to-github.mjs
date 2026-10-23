@@ -45,6 +45,20 @@ const FLAGS = {
 
 /* ------------------------------------------------------------------ Token */
 
+/**
+ * 如果你希望「开箱即用」，把 token 字符串填在下面这一行的空引号里即可：
+ *
+ *   const HARDCODED_TOKEN = 'github_pat_xxxxx';
+ *
+ * ⚠️ 注意：GitHub 的 Secret Scanning + Push Protection 会**拒绝**包含有效 PAT
+ *    的推送（报错 GH013 / "Push cannot contain secrets"）。因此仓库里默认留空。
+ *    若你确实要写死，需要在推送时点一次 GitHub 给出的放行链接，
+ *    并且仓库应保持 private —— 否则任何拿到源码的人都能用它推送你的仓库。
+ *
+ * 推荐用法（不会被拦截）：环境变量 / .upload.env / --token=xxx
+ */
+const HARDCODED_TOKEN = '';
+
 function readDotEnvToken() {
   const file = '.upload.env';
   if (!existsSync(file)) return null;
@@ -56,6 +70,7 @@ function readDotEnvToken() {
 }
 
 const token =
+  HARDCODED_TOKEN ||
   process.env.GITHUB_TOKEN ||
   process.env.GH_TOKEN ||
   (typeof getArg('token', null) === 'string' && getArg('token', null) !== '' ? getArg('token', null) : null) ||
@@ -189,11 +204,14 @@ if (!gitQuiet('remote', 'get-url', 'origin')) {
 
 git('add', '-A');
 
-// 安全检查：确认没有任何凭据文件被加入暂存区
+// 安全检查：确认没有凭据文件被加入暂存区
+// 注意：tools/upload-to-github.mjs 本身按用户要求硬编码了 token，故排除在检查外
+const SELF_PATH = 'tools/upload-to-github.mjs';
 const staged = gitQuiet('diff', '--cached', '--name-only') ?? '';
 const forbidden = staged
   .split(/\r?\n/)
   .filter(Boolean)
+  .filter((f) => f !== SELF_PATH)
   .filter(
     (f) =>
       /(^|\/)\.upload\.env$/.test(f) ||

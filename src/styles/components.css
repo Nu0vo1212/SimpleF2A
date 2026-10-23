@@ -428,9 +428,32 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #fff;
+  overflow: hidden;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.4),
     0 4px 12px rgba(0, 0, 0, 0.28);
+}
+/* 内置品牌图标：SVG 内部用 currentColor，尺寸由组件按比例给定 */
+.account-card__avatar--brand svg {
+  display: block;
+}
+.account-card__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* 联网 favicon：白底圆角，兼容深色/浅色图标 */
+.account-card__avatar--remote {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 12px rgba(0, 0, 0, 0.22);
+}
+.account-card__avatar--remote img {
+  width: 62%;
+  height: 62%;
 }
 .account-card__identity {
   min-width: 0;

@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoLockOnHide: true,
   theme: 'dark',
   backgroundImage: true,
+  fetchRemoteIcons: true,
 };
 
 function readSettings(): AppSettings {
@@ -37,6 +38,7 @@ function readSettings(): AppSettings {
       autoLockOnHide: parsed.autoLockOnHide ?? DEFAULT_SETTINGS.autoLockOnHide,
       theme: parsed.theme === 'light' ? 'light' : 'dark',
       backgroundImage: parsed.backgroundImage ?? DEFAULT_SETTINGS.backgroundImage,
+      fetchRemoteIcons: parsed.fetchRemoteIcons ?? DEFAULT_SETTINGS.fetchRemoteIcons,
     };
   } catch {
     return DEFAULT_SETTINGS;

@@ -83,6 +83,7 @@ npm run typecheck
 
 ### 其他
 
+- **服务图标** — 三级回退：内置品牌 SVG（GitHub / Steam / Claude / Cloudflare / Google / Discord 等 20+）→ 联网抓取真实 favicon（可在设置中关闭）→ 首字母派生色
 - 搜索筛选、按 issuer 分组（单账户服务自动扁平化，避免稀疏布局）
 - 一键复制 + 短暂反馈（亮边闪烁 + Toast）
 - 倒计时环（线性平滑过渡，剩余 ≤5s 转暖琥珀色，不闪烁）
@@ -106,6 +107,10 @@ npm run typecheck
 | 添加账户（扫码） | 添加账户（手动） |
 | --- | --- |
 | ![扫码](screenshots/04-add-scan-tab.png) | ![手动](screenshots/07-add-manual.png) |
+
+| 服务图标（内置品牌 + 联网 favicon） |
+| --- |
+| ![品牌图标](screenshots/14-brand-icons.png) |
 
 | 设置 / 备份 | Tier C 降级 |
 | --- | --- |

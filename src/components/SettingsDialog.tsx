@@ -398,6 +398,24 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                   />
                 </label>
 
+                <h3 className="settings__title settings__title--sub">服务图标</h3>
+                <label className="toggle-row">
+                  <span>
+                    <span className="toggle-row__label">联网获取服务图标</span>
+                    <span className="toggle-row__desc">
+                      GitHub、Steam、Claude 等常见服务使用内置图标，无需联网。开启后，未收录的服务会向
+                      DuckDuckGo / Google 图标服务请求真实网站图标——这会让第三方得知你使用了哪些服务。
+                      关闭后仅显示内置图标或首字母。
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="switch"
+                    checked={settings.fetchRemoteIcons}
+                    onChange={(e) => updateSettings({ fetchRemoteIcons: e.target.checked })}
+                  />
+                </label>
+
                 <h3 className="settings__title settings__title--sub">玻璃质量</h3>
                 <p className="settings__desc">
                   当前：<strong>{tierLabel}</strong>。层级由设备能力、系统偏好与实测帧率自动决定，不可手动切换。
