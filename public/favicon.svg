@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="b" x1="8" y1="6" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="0.55" stop-color="#2DD4BF"/>
+      <stop offset="1" stop-color="#0E7490"/>
+    </linearGradient>
+    <radialGradient id="s" cx="0.3" cy="0.22" r="0.7">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="48" height="48" rx="11" fill="#07090C"/>
+  <rect x="3" y="3" width="42" height="42" rx="10" fill="url(#b)" fill-opacity="0.16" stroke="#2DD4BF" stroke-opacity="0.5"/>
+  <path d="M16.5 21.5v-4a7.5 7.5 0 0 1 15 0v4" stroke="url(#b)" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <rect x="12" y="21.5" width="24" height="18" rx="6" fill="url(#b)"/>
+  <rect x="12" y="21.5" width="24" height="18" rx="6" fill="url(#s)"/>
+  <circle cx="24" cy="29.5" r="2.6" fill="#062A2A" fill-opacity="0.85"/>
+  <rect x="22.9" y="30.6" width="2.2" height="4.4" rx="1.1" fill="#062A2A" fill-opacity="0.85"/>
+</svg>

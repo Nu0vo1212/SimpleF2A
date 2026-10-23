@@ -1,0 +1,160 @@
+/* ==========================================================================
+   SimpleF2A · Design Tokens
+   液态玻璃五步法 / 背景层级 / 降级阈值 —— 全部 token 化。
+   组件中禁止出现裸 blur() 数值或临时 rgba 玻璃色。
+   ========================================================================== */
+
+:root {
+  /* ---------- 玻璃五步法 ---------- */
+  /* ① 模糊 */
+  --glass-blur: 8px;
+  --glass-blur-nav: 12px;
+  --glass-blur-modal: 16px;
+  --glass-blur-tierc: 0px;
+  /* ② 增色 */
+  --glass-saturate: 180%;
+  /* ③ 白色基底 */
+  --glass-tint: rgba(255, 255, 255, 0.1);
+  --glass-tint-strong: rgba(255, 255, 255, 0.14);
+  /* ④ 1px 亮边 */
+  --glass-border-top: rgba(255, 255, 255, 0.55);
+  --glass-border-side: rgba(255, 255, 255, 0.12);
+  --glass-border-side-weak: rgba(255, 255, 255, 0.1);
+  --glass-hairline: rgba(255, 255, 255, 0.16);
+  --glass-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --glass-shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.45);
+  /* ⑤ 边缘折射 */
+  --glass-refraction-scale: 16;
+  --glass-refraction-scale-nav: 20;
+  --glass-refraction-base-frequency: 0.014;
+  --glass-refraction-octaves: 2;
+  --glass-refraction-hover-boost: 1.15;
+
+  /* 玻璃与背景之间的遮罩（深色：压暗；浅色：提亮） */
+  --glass-scrim: rgba(0, 0, 0, 0.08);
+
+  /* ---------- 背景层 ---------- */
+  --bg-base: #07090c;
+  --bg-base-end: #0e141b;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --bg-overlay-light: rgba(238, 242, 246, 0.28);
+  /* 图片上方的中心提暗：保证正文与玻璃卡片在复杂图片上仍可读 */
+  --bg-overlay-center: rgba(3, 6, 10, 0.42);
+  --bg-spot-teal: rgba(45, 212, 191, 0.12);
+  --bg-spot-indigo: rgba(99, 102, 241, 0.14);
+  --bg-spot-amber: rgba(245, 158, 11, 0.08);
+  --bg-spot-blur: 90px;
+  --bg-spot-drift-duration: 26s;
+  --bg-lines-opacity: 0.04;
+  --bg-image-opacity: 1;
+  --bg-image-fade: 1s;
+  --bg-image-dim: 0.82;
+
+  /* ---------- 字体 ---------- */
+  --font-ui: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --code-font: 'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', ui-monospace, 'Cascadia Mono',
+    'Menlo', monospace;
+  --code-size: clamp(2rem, 5vw, 2.75rem);
+  --code-tracking: 0.08em;
+  --code-surface: #0d1117;
+  --code-surface-border: rgba(255, 255, 255, 0.08);
+
+  --text-primary: rgba(255, 255, 255, 0.94);
+  --text-secondary: rgba(255, 255, 255, 0.66);
+  --text-tertiary: rgba(255, 255, 255, 0.44);
+  --text-on-code: #f2f6fa;
+
+  /* ---------- 语义色 ---------- */
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --accent-dim: rgba(45, 212, 191, 0.18);
+  --accent-ring: rgba(45, 212, 191, 0.45);
+  --warning: #f59e0b;
+  --warning-dim: rgba(245, 158, 11, 0.16);
+  --danger: #f87171;
+  --danger-dim: rgba(248, 113, 113, 0.16);
+  --success: #34d399;
+
+  /* ---------- 圆角 ---------- */
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --radius-input: 10px;
+  --radius-pill: 999px;
+  --radius-modal: 20px;
+  --radius-drawer: 20px;
+
+  /* ---------- 间距节奏 4 / 8 / 12 / 16 / 24 / 32 ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ---------- 动效 ---------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --stagger-delay: 40ms;
+
+  /* ---------- 布局 ---------- */
+  --content-max: 1120px;
+  --card-min-cols: 328px;
+  --nav-height: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* ---------- 性能/降级阈值（运行时可被 JS 覆盖为 tier-b） ---------- */
+  --glass-tier: 'a';
+  --perf-sample-frames: 30;
+}
+
+/* --------------------------------------------------------------------------
+   浅色模式：不是简单反色 —— 玻璃改为偏白的乳浊玻璃，遮罩改为提亮，
+   亮边换成深色微光，避免浅背景上「发脏」。
+   -------------------------------------------------------------------------- */
+:root[data-theme='light'] {
+  --glass-tint: rgba(255, 255, 255, 0.55);
+  --glass-tint-strong: rgba(255, 255, 255, 0.7);
+  --glass-border-top: rgba(255, 255, 255, 0.9);
+  --glass-border-side: rgba(9, 12, 17, 0.08);
+  --glass-border-side-weak: rgba(9, 12, 17, 0.06);
+  --glass-hairline: rgba(9, 12, 17, 0.12);
+  --glass-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+  --glass-shadow-hover: 0 22px 60px rgba(15, 23, 42, 0.24);
+  --glass-scrim: rgba(255, 255, 255, 0.24);
+
+  --bg-base: #eef2f6;
+  --bg-base-end: #dbe3ec;
+  --bg-overlay: var(--bg-overlay-light);
+  --bg-overlay-center: rgba(240, 244, 249, 0.62);
+  --bg-spot-teal: rgba(13, 148, 136, 0.18);
+  --bg-spot-indigo: rgba(79, 70, 229, 0.16);
+  --bg-spot-amber: rgba(217, 119, 6, 0.12);
+  --bg-lines-opacity: 0.05;
+  --bg-image-dim: 0.9;
+
+  --code-surface: #0b0f14;
+  --code-surface-border: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #0f172a;
+  --text-secondary: #47556b;
+  --text-tertiary: #6b7a90;
+  --text-on-code: #f2f6fa;
+
+  --accent: #0d9488;
+  --accent-strong: #0f766e;
+  --accent-dim: rgba(13, 148, 136, 0.12);
+  --accent-ring: rgba(13, 148, 136, 0.4);
+  --warning: #b45309;
+  --warning-dim: rgba(180, 83, 9, 0.12);
+  --danger: #dc2626;
+  --danger-dim: rgba(220, 38, 38, 0.1);
+  --success: #059669;
+}

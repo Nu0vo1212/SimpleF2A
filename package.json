@@ -1,0 +1,40 @@
+{
+  "name": "simple-f2a",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Liquid-glass, zero-knowledge 2FA authenticator PWA. Keys never leave the browser.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --pretty false",
+    "shots": "node tools/screenshots.mjs",
+    "perf": "node tools/perf.mjs",
+    "upload": "node tools/upload-to-github.mjs"
+  },
+  "dependencies": {
+    "idb": "^8.0.4",
+    "lucide-react": "^0.548.0",
+    "otpauth": "^9.5.2",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "puppeteer-core": "^25.16.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5",
+    "workbox-window": "^7.4.1"
+  }
+}

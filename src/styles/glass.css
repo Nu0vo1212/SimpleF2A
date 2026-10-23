@@ -1,0 +1,224 @@
+/* ==========================================================================
+   SimpleF2A · Liquid Glass material system
+   五步法落地 —— 每个 tier 都能在源码里逐项找到对应属性。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Tier A · 完整玻璃：blur + saturate + tint + 1px 亮边 + SVG 折射
+   折射通过 feTurbulence → feGaussianBlur → feDisplacementMap 生成边缘位移，
+   同时用 radial-gradient mask 把位移限制在边缘，中心保持像素稳定。
+   -------------------------------------------------------------------------- */
+.glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-hairline);
+  background: linear-gradient(
+    145deg,
+    var(--glass-tint-strong) 0%,
+    var(--glass-tint) 42%,
+    color-mix(in srgb, var(--glass-tint) 55%, transparent) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 var(--glass-border-top),
+    inset 1px 0 0 var(--glass-border-side),
+    inset -1px 0 0 var(--glass-border-side-weak),
+    var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  transition:
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+/* 折射层：伪元素承载 SVG filter，保证内容文字永不被滤镜重采样 */
+.glass--refract::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.35))
+    saturate(var(--glass-saturate)) brightness(1.18) contrast(1.06);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(var(--glass-saturate))
+    brightness(1.18) contrast(1.06);
+  filter: url('#liquid-glass-edge');
+  /* 位移只发生在边缘环带：中心保持像素稳定，验证码永不被扭曲 */
+  -webkit-mask-image: radial-gradient(96% 96% at 50% 50%, transparent 52%, #000 96%);
+  mask-image: radial-gradient(96% 96% at 50% 50%, transparent 52%, #000 96%);
+  opacity: 1;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* Tier A：玻璃本体只保留极轻的 tint，把「磨砂厚度」交给折射层，
+   避免双层 tint 叠加成一块灰塑料 */
+.glass--refract {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--glass-tint) 46%, transparent) 0%,
+    color-mix(in srgb, var(--glass-tint) 26%, transparent) 58%,
+    color-mix(in srgb, var(--glass-tint) 40%, transparent) 100%
+  );
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.glass--refract::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* 上缘的液态高光：0.5px 白边 + 渐隐，模拟玻璃厚度 */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.02) 12%,
+      transparent 34%
+    );
+}
+
+.glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 伪元素图层顺序：::before = 折射底层(-1)，::after = 上缘高光(0)，内容(1) */
+
+/* nav / modal 变体 */
+.glass--nav {
+  --glass-blur: var(--glass-blur-nav);
+  border-radius: 0;
+}
+.glass--modal {
+  --glass-blur: var(--glass-blur-modal);
+  border-radius: var(--radius-modal);
+}
+.glass--drawer {
+  border-radius: var(--radius-drawer) var(--radius-drawer) 0 0;
+}
+.glass--pill {
+  border-radius: var(--radius-pill);
+}
+
+/* 折射 nav 使用更大的 scale */
+.glass--refract.glass--nav::before {
+  filter: url('#liquid-glass-edge-nav');
+}
+
+/* hover：只上浮 1px + 亮边增亮，不放大 */
+.glass--interactive:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--glass-border-top) 100%, white 10%),
+    inset 1px 0 0 var(--glass-border-side),
+    inset -1px 0 0 var(--glass-border-side-weak),
+    var(--glass-shadow-hover);
+}
+.glass--interactive.glass--refract:hover::before {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Tier B · 纯 CSS 玻璃（无 SVG 折射）
+   blur + saturate + tint + 亮边 + ::after 内高光
+   -------------------------------------------------------------------------- */
+.tier-b .glass--refract::before {
+  filter: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  opacity: 0;
+}
+/* Tier B：折射层关闭，玻璃本体恢复完整的 blur + saturate + tint */
+.tier-b .glass--refract,
+.glass--css-edge {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: linear-gradient(
+    145deg,
+    var(--glass-tint-strong) 0%,
+    var(--glass-tint) 42%,
+    color-mix(in srgb, var(--glass-tint) 55%, transparent) 100%
+  );
+}
+.tier-b .glass--refract::after {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* --------------------------------------------------------------------------
+   Tier C · 极简：关闭 backdrop-filter，改为可辨识的半透明纯色 + 边框
+   触发：prefers-reduced-transparency: reduce / 低端设备 / 手动
+   -------------------------------------------------------------------------- */
+.tier-c .glass,
+.glass--opaque {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--bg-base) 82%, white 18%);
+  border: 1px solid var(--glass-hairline);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), var(--glass-shadow);
+}
+:root[data-theme='light'] .tier-c .glass,
+:root[data-theme='light'] .glass--opaque {
+  background: color-mix(in srgb, white 88%, var(--bg-base-end) 12%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--glass-shadow);
+}
+.tier-c .glass--refract::before,
+.tier-c .glass--refract::after {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   验证码内层：完全不透明、无 backdrop-filter、无折射
+   这是「验证码永远是主角」的物理保障
+   -------------------------------------------------------------------------- */
+.code-surface {
+  background: var(--code-surface);
+  border: 1px solid var(--code-surface-border);
+  border-radius: var(--radius-input);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  isolation: isolate;
+}
+/* Tier C 下也保持不透明 —— 可读性优先于材质一致性 */
+.tier-c .code-surface {
+  background: var(--code-surface);
+}
+
+/* 降低透明度偏好：玻璃改为不透明表面 */
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: color-mix(in srgb, var(--bg-base) 84%, white 16%);
+  }
+  :root[data-theme='light'] .glass {
+    background: color-mix(in srgb, white 90%, var(--bg-base-end) 10%);
+  }
+  .glass--refract::before,
+  .glass--refract::after {
+    display: none;
+  }
+}
+
+/* 降低动效偏好：停止光斑漂移、卡片 stagger、所有过渡 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .bg-spot {
+    animation: none !important;
+  }
+}

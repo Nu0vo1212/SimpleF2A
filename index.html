@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>SimpleF2A · 本地双因素验证器</title>
+    <meta
+      name="description"
+      content="零服务器、AES-256-GCM 加密本地 vault 的双因素验证器。支持 TOTP / HOTP / Steam / Yandex / MOTP，密钥永不离开本设备。"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#07090C" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#EEF2F6" media="(prefers-color-scheme: light)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SimpleF2A" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>SimpleF2A 需要启用 JavaScript 才能在本地完成加密与验证码计算。</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

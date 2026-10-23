@@ -1,0 +1,43 @@
+{
+  "name": "SimpleF2A · 本地加密验证器",
+  "short_name": "SimpleF2A",
+  "description": "零服务器、AES-256-GCM 加密本地 vault 的双因素验证器。支持 TOTP / HOTP / Steam / Yandex / MOTP。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#07090C",
+  "theme_color": "#07090C",
+  "categories": ["security", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "添加账户",
+      "short_name": "添加",
+      "url": "./?action=add",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
