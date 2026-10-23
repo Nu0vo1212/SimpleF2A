@@ -13,3 +13,5 @@ screenshots/_*.png
 *.log
 *.tsbuildinfo
 WB-AccountManager.exe
+.exe-build/
+*.exe

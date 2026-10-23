@@ -14,7 +14,8 @@
     "typecheck": "tsc -b --pretty false",
     "shots": "node tools/screenshots.mjs",
     "perf": "node tools/perf.mjs",
-    "upload": "node tools/upload-to-github.mjs"
+    "upload": "node tools/upload-to-github.mjs",
+    "exe": "npm run build && node tools/build-exe.mjs"
   },
   "dependencies": {
     "idb": "^8.0.4",
@@ -30,6 +31,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
+    "@yao-pkg/pkg": "^6.24.0",
     "puppeteer-core": "^25.16.0",
     "typescript": "^5.9.3",
     "vite": "^8.3.5",
