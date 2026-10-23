@@ -69,22 +69,27 @@ export function TopBar({ onAdd, onSettings, query, onQueryChange }: Props) {
         </div>
 
         <nav className="topbar__actions" aria-label="主操作">
+          {/* 主题切换：带文字标签，明确可辨认，而不是藏在图标堆里 */}
           <button
             type="button"
-            className="icon-button icon-button--glass theme-toggle"
+            className="theme-switch"
             onClick={toggleTheme}
             aria-label={isLight ? '切换到深色模式' : '切换到浅色模式'}
             title={isLight ? '切换到深色模式 (Ctrl/⌘+Shift+L)' : '切换到浅色模式 (Ctrl/⌘+Shift+L)'}
             aria-pressed={isLight}
           >
-            {/* 同一个 MorphIcon：icon prop 变化即触发形变动画 */}
-            <MorphIcon
-              icon={isLight ? icons.moon : icons.sun}
-              size={17}
-              spring="bouncy"
-              reducedMotion="user"
-              aria-hidden="true"
-            />
+            <span className="theme-switch__track" aria-hidden="true">
+              <span className={cx('theme-switch__thumb', isLight && 'theme-switch__thumb--light')}>
+                <MorphIcon
+                  icon={isLight ? icons.sun : icons.moon}
+                  size={13}
+                  spring="bouncy"
+                  reducedMotion="user"
+                  aria-hidden="true"
+                />
+              </span>
+            </span>
+            <span className="theme-switch__label">{isLight ? '浅色' : '深色'}</span>
           </button>
 
           <button

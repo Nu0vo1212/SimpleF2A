@@ -93,7 +93,7 @@ await page.keyboard.press('Escape');
 await sleep(400);
 
 /* 6. 浅色列表 */
-await page.click('.theme-toggle');
+await page.click('.theme-switch');
 await sleep(1100);
 await page.screenshot({ path: `${OUT}/22-light.png` });
 console.log('✓ 22 浅色列表');
@@ -107,7 +107,7 @@ await page.keyboard.press('Escape');
 await sleep(400);
 
 /* 8. 设置面板（深色，展示备份页） */
-await page.click('.theme-toggle');
+await page.click('.theme-switch');
 await sleep(900);
 await page.click('.topbar__actions .icon-button[aria-label="设置"]');
 await sleep(700);

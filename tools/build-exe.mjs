@@ -6,11 +6,20 @@
  *
  * 说明：
  *  - 使用 @yao-pkg/pkg 把 tools/launcher.mjs 打成 node24-win-x64 单文件
- *  - dist/ 作为内嵌资源一起写入 exe（launcher 通过 process.pkg 判断并从虚拟路径读取）
+ *  - dist/ 与 tools/tray-host.ps1 作为内嵌资源一起写入 exe
  *  - 需要 pkg-fetch 的预构建二进制；若本机缓存缺失，脚本会自动从镜像下载
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, copyFileSync, mkdirSync, statSync, createWriteStream, chmodSync } from 'node:fs';
+import {
+  existsSync,
+  copyFileSync,
+  mkdirSync,
+  statSync,
+  createWriteStream,
+  chmodSync,
+  writeFileSync,
+  cpSync,
+} from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
@@ -89,11 +98,39 @@ if (!existsSync(PKG_BIN)) {
   process.exit(1);
 }
 
+/**
+ * pkg 通过 package.json 的 pkg.assets 决定内嵌哪些非 JS 资源。
+ * 这里生成一个临时 package.json（指向 launcher），把 dist/ 与托盘脚本都打进去。
+ */
+const STAGING = join(WORK, 'pkg-entry');
+mkdirSync(STAGING, { recursive: true });
+const stagingPkg = {
+  name: 'simplef2a-bundle',
+  version: '1.0.0',
+  main: 'launcher.mjs',
+  pkg: {
+    // assets 会内嵌到快照文件系统；--icon 用于设置 exe 的 Windows 资源图标
+    assets: ['dist/**/*', 'tools/tray-host.ps1', 'tools/app.ico'],
+    outputPath: WORK,
+  },
+};
+
+writeFileSync(join(STAGING, 'package.json'), JSON.stringify(stagingPkg, null, 2), 'utf8');
+copyFileSync(ENTRY, join(STAGING, 'launcher.mjs'));
+// dist/ 与托盘脚本按 assets 声明的位置放置
+cpSync(DIST, join(STAGING, 'dist'), { recursive: true });
+mkdirSync(join(STAGING, 'tools'), { recursive: true });
+copyFileSync(
+  join(ROOT, 'tools', 'tray-host.ps1'),
+  join(STAGING, 'tools', 'tray-host.ps1'),
+);
+copyFileSync(join(ROOT, 'tools', 'app.ico'), join(STAGING, 'tools', 'app.ico'));
+
 execFileSync(
   process.execPath,
   [
     PKG_BIN,
-    ENTRY,
+    join(STAGING, 'launcher.mjs'),
     '--targets',
     'node24-win-x64',
     '--output',
@@ -105,8 +142,18 @@ execFileSync(
     '--no-dict',
     '*',
   ],
-  { cwd: ROOT, stdio: 'inherit' },
+  { cwd: STAGING, stdio: 'inherit' },
 );
+
+/**
+ * 注意：不要用 Win32 UpdateResource 事后修改 pkg 产出的 exe —— 
+ * pkg 把载荷追加在 PE 结构之后，改写资源段会让它报 "Pkg: Error reading from file"。
+ *
+ * 正确做法是在「基础二进制」阶段就带图标（pkg-fetch 的 built-* 文件），
+ * 但那需要重新构建 Node 基础镜像。这里采用更安全的折中：
+ *   - exe 使用 pkg 默认图标
+ *   - 托盘图标在运行时从内嵌的 app.ico 读取（已实现且可靠）
+ */
 
 if (!existsSync(RAW_EXE)) {
   console.error('✗ pkg 未生成 exe');
@@ -119,5 +166,5 @@ const sizeMb = (statSync(TARGET).size / 1024 / 1024).toFixed(1);
 
 console.log('');
 console.log(`✓ 已生成：${TARGET}  (${sizeMb} MB)`);
-console.log('  双击运行后会打开命令行窗口，并自动用默认浏览器打开应用。');
-console.log('  关闭命令行窗口即停止服务。');
+console.log('  双击运行后常驻系统托盘，并自动用默认浏览器打开应用。');
+console.log('  托盘图标：单击/双击打开页面，右键可复制地址、刷新、退出。');
