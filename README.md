@@ -109,7 +109,7 @@ node tools/build-exe.mjs --out "D:\Tools\SimpleF2A.exe"
 
 - **手动输入** — Base32 密钥、issuer、账户名、类型、算法、位数、周期/计数器、PIN，实时校验
 - **otpauth:// URI 粘贴** — 完整解析 Key URI Format
-- **二维码扫描** — 原生 `BarcodeDetector` + 摄像头流；不支持时降级为「上传图片 + 粘贴 URI」
+- **二维码图片识别** — 上传 / 拖拽 / 粘贴截图，用 `jsQR` 在本地解码（纯 JS，任何浏览器都能用，不依赖摄像头或原生 API）
 - **otpauth-migration:// 批量导入** — Google Authenticator 导出格式（自带最小 protobuf 解析器，无外部依赖）
 - **JSON 备份导入** — 兼容 Aegis / 2FAS / Bitwarden / AndOTP / 本应用导出
 
@@ -168,7 +168,7 @@ node tools/build-exe.mjs --out "D:\Tools\SimpleF2A.exe"
 | 存储 | `idb` | IndexedDB，数据不出本机 |
 | 备份加密 | **Web Crypto API** | AES-256-GCM + PBKDF2-SHA256（仅用于导出备份） |
 | 二维码 | `qrcode` | 生成 SVG / DataURL |
-| 扫码 | `BarcodeDetector` | 原生 API，带降级路径 |
+| 二维码识别 | `jsQR` + `BarcodeDetector` | jsQR 为主（通用），原生 API 优先尝试（更快） |
 | PWA | `vite-plugin-pwa` (Workbox) | 预缓存 + 离线 |
 | 测试 | Vitest | RFC 公开测试向量 |
 
@@ -193,7 +193,7 @@ src/
 │   ├── tier.ts            # Tier A/B/C 自动降级判定
 │   ├── background.ts      # 随机图片 API + 容灾
 │   ├── favicon.ts         # 联网图标抓取 + 缓存
-│   ├── qr.ts              # 二维码生成 + BarcodeDetector
+│   ├── qr.ts              # 二维码生成 + jsQR 图片解码
 │   └── VaultProvider.tsx  # React 状态层（主题/数据/背景/Toast）
 ├── components/            # UI（含 morphicons 图标层 Icons.tsx）
 └── styles/

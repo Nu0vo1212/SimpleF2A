@@ -33,6 +33,14 @@ export function Dialog({
 }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef<HTMLElement | null>(null);
+  /**
+   * onClose 保持最新引用，但不作为 effect 依赖。
+   * 父组件每次渲染都会传入新的函数，若把它写进依赖数组，
+   * effect 会反复清理+重建，导致 focus() 被反复调用、焦点在按钮间乱跳，
+   * 输入框永远无法保持焦点（表现为「点一下就闪，打不了字」）。
+   */
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -40,19 +48,22 @@ export function Dialog({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
+    // 只在面板首次挂载时聚焦一次
     const focusTimer = window.setTimeout(() => {
       const panel = panelRef.current;
       if (!panel) return;
+      // 面板内已有焦点（用户已在输入）时不要抢走
+      if (panel.contains(document.activeElement)) return;
       const focusable = panel.querySelector<HTMLElement>(
-        'input:not([type="hidden"]), button:not([disabled]), [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], select, [tabindex]:not([tabindex="-1"])',
       );
       focusable?.focus();
-    }, 40);
+    }, 60);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -82,7 +93,8 @@ export function Dialog({
       document.body.style.overflow = previousOverflow;
       restoreFocus.current?.focus?.();
     };
-  }, [open, onClose]);
+    // 只依赖 open：onClose 通过 ref 读取，避免每次父组件渲染都重建 effect
+  }, [open]);
 
   if (!open) return null;
 

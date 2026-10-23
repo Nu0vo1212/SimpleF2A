@@ -107,7 +107,7 @@ export function DeleteAccountConfirm({
     <DangerConfirm
       open={open}
       title="删除这个账户？"
-      description={`删除「${accountLabel}」后，其密钥将从本地加密 vault 中永久移除，无法撤销。你仍可在服务方重新绑定。`}
+      description={`删除「${accountLabel}」后，其密钥将从本机浏览器中永久移除，无法撤销。你仍可在服务方重新绑定。`}
       confirmLabel="永久删除该账户"
       onClose={onClose}
       onConfirm={onConfirm}

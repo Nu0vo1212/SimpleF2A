@@ -21,7 +21,7 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
       <p className="empty-state__text">
         添加第一个 2FA 账户，验证码将在本设备离线生成。
         <br />
-        密钥使用 AES-256-GCM 加密后只保存在这台设备的浏览器中。
+        账户数据只保存在这台设备的浏览器中，不会上传到任何服务器。
       </p>
 
       <button type="button" className="primary-button primary-button--lg" onClick={onAdd}>

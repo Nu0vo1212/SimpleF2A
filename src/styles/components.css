@@ -640,16 +640,42 @@
   flex-shrink: 0;
 }
 
+/* 下拉菜单：必须足够不透明 —— 它浮在背景图和玻璃卡片之上，
+   太透会让文字与背景图案混在一起完全看不清。
+   注意：这里用 !important 覆盖 .glass 的渐变背景。 */
 .menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  z-index: 20;
+  z-index: 40;
   min-width: 190px;
   padding: var(--space-1);
   border-radius: var(--radius-button);
-  background: color-mix(in srgb, var(--bg-base) 88%, transparent);
+  background: color-mix(in srgb, var(--bg-base) 96%, white 4%) !important;
+  background-image: none !important;
+  border: 1px solid var(--glass-hairline);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-border-top),
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.4);
   animation: menu-in 140ms var(--ease-out);
+}
+/* 浅色模式：白底菜单 */
+:root[data-theme='light'] .menu {
+  background: color-mix(in srgb, white 97%, var(--bg-base) 3%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 32px rgba(15, 23, 42, 0.22),
+    0 2px 8px rgba(15, 23, 42, 0.12);
+}
+/* Tier C（关闭 backdrop-filter）时给更高的不透明度兜底 */
+.tier-c .menu {
+  background: var(--bg-base) !important;
+}
+:root[data-theme='light'] .tier-c .menu {
+  background: #ffffff !important;
 }
 @keyframes menu-in {
   from {
@@ -673,10 +699,17 @@
   text-align: left;
 }
 .menu__item:hover {
-  background: var(--glass-tint);
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+.menu__item:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
 }
 .menu__item--danger {
   color: var(--danger);
+}
+.menu__item--danger:hover {
+  background: var(--danger-dim);
 }
 
 /* 验证码区：独立不透明内层 + 倒计时环 */
@@ -1460,6 +1493,66 @@
   cursor: pointer;
 }
 
+/* 上传二维码区：拖拽 / 点击 */
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 180px;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--glass-hairline);
+  background: color-mix(in srgb, var(--glass-tint) 45%, transparent);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+.upload-zone:hover {
+  border-color: var(--accent-ring);
+  background: var(--accent-dim);
+}
+.upload-zone--over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  border-style: solid;
+}
+.upload-zone--busy {
+  cursor: progress;
+}
+.upload-zone__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  color: var(--accent-strong);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-ring);
+}
+.upload-zone__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.upload-zone__hint {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+.upload-zone__preview {
+  max-width: 160px;
+  max-height: 120px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #fff;
+  padding: 4px;
+}
+
+/* 旧的摄像头预览样式（已不再使用，保留以防回退） */
 .scanner {
   position: relative;
   aspect-ratio: 4 / 3;

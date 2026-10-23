@@ -95,7 +95,7 @@ export function buildPlainBackup(accounts: OtpAccount[]): PlainBackup {
     exportedAt: new Date().toISOString(),
     accountCount: accounts.length,
     entries: accounts.map(toBackupEntry),
-    generator: 'SimpleF2A · zero-knowledge local vault',
+    generator: 'SimpleF2A · local authenticator',
   };
 }
 

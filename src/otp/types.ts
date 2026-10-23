@@ -97,7 +97,7 @@ export function isOtpType(value: unknown): value is OtpType {
 
 /**
  * 账号记录（解密后的明文结构）。
- * 该对象会整体被 AES-256-GCM 加密后写入 IndexedDB。
+ * 该对象会被序列化后写入浏览器 IndexedDB。
  */
 export interface OtpAccount {
   id: string;

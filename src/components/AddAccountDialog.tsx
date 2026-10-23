@@ -13,12 +13,7 @@ import {
   type OtpType,
 } from '../otp/types';
 import { generateSecret, isValidBase32, normalizeBase32 } from '../otp/base32';
-import {
-  detectFromImageFile,
-  isBarcodeDetectorSupported,
-  isCameraSupported,
-  startCameraScan,
-} from '../lib/qr';
+import { decodeQrFromClipboard, decodeQrFromFile } from '../lib/qr';
 import { cx } from '../lib/utils';
 
 type Tab = 'scan' | 'uri' | 'manual';
@@ -192,7 +187,7 @@ function PendingReview({ draft }: { draft: OtpAccountDraft }) {
         <Row label="密钥" value={`${draft.secret.slice(0, 4)}••••${draft.secret.slice(-4)}`} mono />
         {draft.pin ? <Row label="PIN" value="••••" mono /> : null}
       </dl>
-      <p className="preview__note">确认无误后点击「确认添加」，该密钥将立即加密写入本地 vault。</p>
+      <p className="preview__note">确认无误后点击「确认添加」，该账户将保存到本机浏览器。</p>
     </div>
   );
 }
@@ -206,7 +201,7 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
   );
 }
 
-/* -------------------------------------------------------------------- 扫码 */
+/* ------------------------------------------------------------- 上传二维码 */
 
 function ScanPanel({
   disabled,
@@ -217,9 +212,6 @@ function ScanPanel({
   onParsed: (draft: OtpAccountDraft) => void;
   onError: (message: string | null) => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const stopRef = useRef<(() => void) | null>(null);
-  const [scanning, setScanning] = useState(false);
   const [manualText, setManualText] = useState('');
 
   const handleValue = useCallback(
@@ -245,99 +237,122 @@ function ScanPanel({
     [onError, onParsed],
   );
 
-  const startScan = async () => {
-    onError(null);
-    if (!isCameraSupported()) {
-      onError('当前浏览器不支持摄像头调用，请改用上传二维码图片或粘贴 URI');
-      return;
-    }
-    const video = videoRef.current;
-    if (!video) return;
-    setScanning(true);
-    stopRef.current = await startCameraScan(
-      video,
-      (value) => {
-        setScanning(false);
-        handleValue(value);
-      },
-      (message) => {
-        setScanning(false);
-        onError(message);
-      },
-    );
-  };
-
-  const stopScan = () => {
-    stopRef.current?.();
-    stopRef.current = null;
-    setScanning(false);
-  };
+  const [decoding, setDecoding] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     onError(null);
+    setDecoding(true);
+    // 显示缩略图，让用户确认选对了图
     try {
-      if (!isBarcodeDetectorSupported()) {
-        onError('当前浏览器不支持二维码识别，请改用粘贴 URI 或手动输入');
-        return;
-      }
-      const values = await detectFromImageFile(file);
-      if (values.length === 0) {
-        onError('图片中未识别到二维码');
-        return;
-      }
-      handleValue(values[0]);
+      setPreview(URL.createObjectURL(file));
     } catch {
-      onError('图片解析失败，请换一张更清晰的截图');
+      setPreview(null);
+    }
+    try {
+      const { text } = await decodeQrFromFile(file);
+      handleValue(text);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : '图片解析失败，请换一张更清晰的截图');
+    } finally {
+      setDecoding(false);
+    }
+  };
+
+  const onPaste = async () => {
+    onError(null);
+    setDecoding(true);
+    try {
+      const { text } = await decodeQrFromClipboard();
+      handleValue(text);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : '剪贴板读取失败');
+    } finally {
+      setDecoding(false);
     }
   };
 
   return (
     <div className="panel">
-      <div className={cx('scanner', scanning && 'scanner--live')}>
-        <video ref={videoRef} className="scanner__video" muted playsInline aria-label="摄像头预览" />
-        {!scanning && (
-          <div className="scanner__placeholder">
-            <MorphIcon icon={icons.camera} size={28} reducedMotion="user" aria-hidden="true" />
-            <p>对准二维码开始识别</p>
-            <span>识别过程完全在本设备完成</span>
-          </div>
+      {/* 拖拽 / 点击上传区 */}
+      <label
+        className={cx('upload-zone', dragOver && 'upload-zone--over', decoding && 'upload-zone--busy')}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (disabled) return;
+          const file = e.dataTransfer.files?.[0];
+          if (file) void onFile(file);
+        }}
+      >
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          disabled={disabled || decoding}
+          onChange={(e) => {
+            void onFile(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
+
+        {preview ? (
+          <img className="upload-zone__preview" src={preview} alt="已选择的二维码图片" />
+        ) : (
+          <span className="upload-zone__icon" aria-hidden="true">
+            <MorphIcon
+              icon={decoding ? icons.loader : icons.upload}
+              size={26}
+              className={decoding ? 'spin' : undefined}
+              reducedMotion="user"
+              aria-hidden="true"
+            />
+          </span>
         )}
-        <div className="scanner__frame" aria-hidden="true" />
-      </div>
+
+        <span className="upload-zone__title">
+          {decoding ? '正在识别二维码…' : '点击选择二维码图片'}
+        </span>
+        <span className="upload-zone__hint">也可以把图片直接拖到这里</span>
+      </label>
 
       <div className="panel__actions">
-        {scanning ? (
-          <button type="button" className="ghost-button" onClick={stopScan}>
-            停止扫描
-          </button>
-        ) : (
-          <button type="button" className="primary-button" onClick={() => void startScan()} disabled={disabled}>
-            <MorphIcon icon={icons.camera} size={16} reducedMotion="user" aria-hidden="true" /> 开启摄像头扫描
-          </button>
-        )}
         <label className={cx('ghost-button', 'file-button')}>
-          <MorphIcon icon={icons.upload} size={16} reducedMotion="user" aria-hidden="true" /> 上传二维码图片
+          <MorphIcon icon={icons.upload} size={16} reducedMotion="user" aria-hidden="true" /> 选择图片
           <input
             type="file"
             accept="image/*"
             className="sr-only"
-            disabled={disabled}
+            disabled={disabled || decoding}
             onChange={(e) => {
               void onFile(e.target.files?.[0]);
               e.target.value = '';
             }}
           />
         </label>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={() => void onPaste()}
+          disabled={disabled || decoding}
+        >
+          <MorphIcon icon={icons.paste} size={16} reducedMotion="user" aria-hidden="true" /> 粘贴截图
+        </button>
       </div>
 
       <p className="panel__hint">
-        {!isBarcodeDetectorSupported() &&
-          '当前浏览器不支持 BarcodeDetector，扫码与图片识别不可用；可粘贴 otpauth:// 链接或手动输入密钥。'}
+        支持 PNG / JPG / WebP 截图。图片只在本设备解析，不会上传到任何服务器。
       </p>
 
       <details className="panel__fallback">
-        <summary>没有摄像头？粘贴 otpauth:// 或迁移链接</summary>
+        <summary>识别不出？直接粘贴 otpauth:// 或迁移链接</summary>
         <textarea
           className="text-input text-area"
           rows={3}
