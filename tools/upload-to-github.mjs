@@ -24,10 +24,13 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const getArg = (name, fallback = null) => {
-  const hit = args.find((a) => a === `--${name}` || a.startsWith(`--${name}=`));
-  if (!hit) return fallback;
-  if (hit.includes('=')) return hit.split('=').slice(1).join('=');
-  return true;
+  const eq = args.find((a) => a.startsWith(`--${name}=`));
+  if (eq) return eq.slice(name.length + 3);
+  const idx = args.indexOf(`--${name}`);
+  if (idx === -1) return fallback;
+  const next = args[idx + 1];
+  // 支持 `--flag value` 与裸 `--flag`
+  return next && !next.startsWith('--') ? next : true;
 };
 
 const FLAGS = {
@@ -55,7 +58,7 @@ function readDotEnvToken() {
 const token =
   process.env.GITHUB_TOKEN ||
   process.env.GH_TOKEN ||
-  (typeof getArg('token', null) === 'string' && getArg('token', null)) ||
+  (typeof getArg('token', null) === 'string' && getArg('token', null) !== '' ? getArg('token', null) : null) ||
   readDotEnvToken();
 
 if (!token) {

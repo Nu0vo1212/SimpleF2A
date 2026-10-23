@@ -8,6 +8,8 @@ dist-ssr
 .upload.env
 vendor
 tools/.github-token
-screenshots/*.tmp.png
+screenshots/_*.png
 .DS_Store
 *.log
+*.tsbuildinfo
+WB-AccountManager.exe
