@@ -1,45 +1,49 @@
 /* ==========================================================================
-   SimpleF2A · Liquid Glass material system
-   五步法落地 —— 每个 tier 都能在源码里逐项找到对应属性。
+   SimpleF2A · Glass material system
+   材质参考 F:\Nu0voBlog（blog-site/css/style.css 的 .card）：
+     高不透明度深蓝底（135deg 三停渐变）
+     + 1px 白描边
+     + inset 0 1px 0 顶部内高光
+     + 0 12px 40px 大投影
+     + blur 固定 0px（不依赖实时模糊，任何环境都稳定）
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   Tier A · 完整玻璃：blur + saturate + tint + 1px 亮边 + SVG 折射
-   折射通过 feTurbulence → feGaussianBlur → feDisplacementMap 生成边缘位移，
-   同时用 radial-gradient mask 把位移限制在边缘，中心保持像素稳定。
+   基础玻璃：所有层级共用这套材质
+   Tier A 在其上额外叠加 SVG 边缘折射，Tier B/C 只用这套本体
    -------------------------------------------------------------------------- */
 .glass {
   position: relative;
   isolation: isolate;
   border-radius: var(--radius-card);
-  border: 1px solid var(--glass-hairline);
+  /* ★ Nu0voBlog 的核心：135deg 三停高不透明度渐变 */
   background: linear-gradient(
-    145deg,
-    var(--glass-tint-strong) 0%,
-    var(--glass-tint) 42%,
-    color-mix(in srgb, var(--glass-tint) 55%, transparent) 100%
+    135deg,
+    var(--glass-fill-1) 0%,
+    var(--glass-fill-2) 60%,
+    var(--glass-fill-3) 100%
   );
+  border: 1px solid var(--glass-hairline);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  /* 多层阴影营造"玻璃厚度"：
-     ① 顶部 1px 亮线（受光面）
-     ② 左/右 1px 侧壁
-     ③ 内侧一圈柔和辉光（光线在玻璃内部散射）
-     ④ 底部内侧暗边（厚度感）
-     ⑤ 外部投影 */
+  /* ★ 投影 + 顶部内高光（与 Nu0voBlog 一致） */
   box-shadow:
-    inset 0 1px 0 var(--glass-border-top),
-    inset 1px 0 0 var(--glass-border-side),
-    inset -1px 0 0 var(--glass-border-side-weak),
-    inset 0 -1px 0 var(--glass-bottom-edge),
-    inset 0 0 var(--glass-inner-glow-size) var(--glass-inner-glow),
-    0 1px 2px rgba(0, 0, 0, 0.18),
-    var(--glass-shadow);
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 var(--glass-inner-glow-size) var(--glass-inner-glow);
   transition:
     box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
     background-color var(--duration-base) var(--ease-out);
+}
+
+/* 浅色模式的投影与内高光需要换一套（深色投影在浅底上会发脏） */
+:root[data-theme='light'] .glass {
+  box-shadow:
+    0 12px 40px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 var(--glass-inner-glow-size) var(--glass-inner-glow);
 }
 
 /* 折射层：伪元素承载 SVG filter，保证内容文字永不被滤镜重采样。
@@ -66,18 +70,17 @@
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Tier A：玻璃本体承担主体模糊，折射层只叠加边缘色散。
-   早期版本把 backdrop-filter 完全交给 ::before，一旦伪元素被遮挡
-   就会完全没有玻璃效果 —— 现在两层都有，互为兜底。 */
+/* Tier A：在 Nu0voBlog 材质之上叠加 SVG 边缘折射。
+   由于 blur 固定 0px，折射表现为边缘轻微的像素偏移与色散，
+   而不是大面积模糊 —— 视觉上更接近"玻璃板"而非"磨砂塑料"。 */
 .glass--refract {
+  /* 折射层需要透过看到背景才有意义，所以玻璃本体略微降低不透明度 */
   background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--glass-tint) 34%, var(--glass-refract-base)) 0%,
-    color-mix(in srgb, var(--glass-tint) 16%, var(--glass-refract-base)) 58%,
-    color-mix(in srgb, var(--glass-tint) 28%, var(--glass-refract-base)) 100%
+    135deg,
+    color-mix(in srgb, var(--glass-fill-1) 88%, transparent) 0%,
+    color-mix(in srgb, var(--glass-fill-2) 84%, transparent) 60%,
+    color-mix(in srgb, var(--glass-fill-3) 88%, transparent) 100%
   );
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 .glass--refract::after {
@@ -87,16 +90,13 @@
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-  /* 镜面扫光：左上方向的斜向高光 + 上缘渐隐白边，
-     模拟真实玻璃表面反射光源的方向感（参考 1Password / macOS 液态玻璃） */
-  background:
-    linear-gradient(
-      115deg,
-      var(--glass-sheen) 0%,
-      color-mix(in srgb, var(--glass-sheen) 30%, transparent) 18%,
-      transparent 42%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 10%, transparent 30%);
+  /* 极克制的斜向高光，只在上缘留下一点反光 */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.01) 12%,
+    transparent 30%
+  );
   opacity: 1;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
@@ -136,67 +136,41 @@
   filter: url('#liquid-glass-edge-nav');
 }
 
-/* hover：只上浮 1px + 亮边增亮，不放大 */
-.glass--interactive:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--glass-border-top) 100%, white 10%),
-    inset 1px 0 0 var(--glass-border-side),
-    inset -1px 0 0 var(--glass-border-side-weak),
-    inset 0 -1px 0 var(--glass-bottom-edge),
-    inset 0 0 calc(var(--glass-inner-glow-size) * 1.3) var(--glass-inner-glow),
-    0 1px 2px rgba(0, 0, 0, 0.2),
-    var(--glass-shadow-hover);
-}
-.glass--interactive.glass--refract:hover::before {
-  opacity: 1;
-}
-/* hover 时镜面扫光更亮（模拟光源角度变化） */
-.glass--interactive:hover::after {
-  background:
-    linear-gradient(
-      115deg,
-      var(--glass-sheen-hover) 0%,
-      color-mix(in srgb, var(--glass-sheen-hover) 34%, transparent) 20%,
-      transparent 46%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.03) 10%, transparent 30%);
-}
-/* 键盘聚焦：等价于 hover 的高亮，另加 outline */
+/* hover：只上浮 1px + 投影加深，不放大（与 Nu0voBlog 的 -2px 一致） */
+.glass--interactive:hover,
 .glass--interactive:focus-visible {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--glass-border-top) 100%, white 10%),
-    inset 1px 0 0 var(--glass-border-side),
-    inset -1px 0 0 var(--glass-border-side-weak),
-    inset 0 0 calc(var(--glass-inner-glow-size) * 1.3) var(--glass-inner-glow),
-    var(--glass-shadow-hover);
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 calc(var(--glass-inner-glow-size) * 1.2) var(--glass-inner-glow);
+}
+:root[data-theme='light'] .glass--interactive:hover,
+:root[data-theme='light'] .glass--interactive:focus-visible {
+  box-shadow:
+    0 16px 48px rgba(15, 23, 42, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 calc(var(--glass-inner-glow-size) * 1.2) var(--glass-inner-glow);
+}
+.glass--interactive:hover {
+  border-color: color-mix(in srgb, var(--glass-hairline) 100%, white 18%);
 }
 
 /* --------------------------------------------------------------------------
-   Tier B · 纯 CSS 玻璃（无 SVG 折射）
-   blur + saturate + tint + 亮边 + ::after 内高光
+   Tier B · 关闭 SVG 折射，材质与 Tier A 相同
+   （Nu0voBlog 风格本身就不依赖折射，Tier B 视觉几乎无损失）
    -------------------------------------------------------------------------- */
 .tier-b .glass--refract::before {
-  filter: none;
-  -webkit-mask-image: none;
-  mask-image: none;
-  opacity: 0;
+  display: none;
 }
-/* Tier B：折射层关闭，玻璃本体恢复完整的 blur + saturate + tint */
-.tier-b .glass--refract,
-.glass--css-edge {
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+/* Tier B 下玻璃恢复完整不透明度（不需要透出背景做色散） */
+.tier-b .glass--refract {
   background: linear-gradient(
-    145deg,
-    var(--glass-tint-strong) 0%,
-    var(--glass-tint) 42%,
-    color-mix(in srgb, var(--glass-tint) 55%, transparent) 100%
+    135deg,
+    var(--glass-fill-1) 0%,
+    var(--glass-fill-2) 60%,
+    var(--glass-fill-3) 100%
   );
-}
-.tier-b .glass--refract::after {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 /* --------------------------------------------------------------------------
@@ -253,78 +227,22 @@
    这不符合该偏好的本意（诉求是「别太花」，不是「别用玻璃」）。
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-transparency: reduce) {
-  /* 背景遮罩减淡 + 光斑增强：玻璃背后需要有明暗层次才看得出"玻璃感" */
-  .bg-overlay,
-  .bg-vignette {
-    opacity: 0.62;
-  }
-  /* 用 saturate/opacity 增强而不是 transform —— 后者会和漂移 keyframes 冲突 */
-  .bg-spot {
-    filter: blur(var(--bg-spot-blur)) saturate(1.4);
-    opacity: 1;
-  }
-  .bg-spot--teal {
-    background: radial-gradient(
-      circle at 50% 50%,
-      color-mix(in srgb, var(--bg-spot-teal) 100%, transparent),
-      color-mix(in srgb, var(--bg-spot-teal) 55%, transparent) 40%,
-      transparent 72%
-    );
-  }
-  .bg-spot--indigo {
-    background: radial-gradient(
-      circle at 50% 50%,
-      color-mix(in srgb, var(--bg-spot-indigo) 100%, transparent),
-      color-mix(in srgb, var(--bg-spot-indigo) 55%, transparent) 40%,
-      transparent 72%
-    );
-  }
-  .bg-spot--amber {
-    background: radial-gradient(
-      circle at 50% 50%,
-      color-mix(in srgb, var(--bg-spot-amber) 100%, transparent),
-      color-mix(in srgb, var(--bg-spot-amber) 55%, transparent) 40%,
-      transparent 72%
-    );
-  }
+  /* 背景保持原样 —— Nu0voBlog 材质本身不依赖背景透视，
+     遮罩无需减淡，语义也更符合「降低透明度」的本意 */
 
-  .glass {
-    /* 保留模糊，但降低强度；提高基底不透明度保证文字可读 */
-    -webkit-backdrop-filter: blur(6px) saturate(130%);
-    backdrop-filter: blur(6px) saturate(130%);
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--glass-tint-strong) 130%, transparent) 0%,
-      color-mix(in srgb, var(--glass-tint) 120%, transparent) 58%,
-      color-mix(in srgb, var(--glass-tint) 110%, transparent) 100%
-    );
-  }
-  /* 折射层不参与：去掉位移与色散，避免视觉噪音 */
+  /* 只去掉 SVG 折射（色散），材质完全保留：
+     blur 本来就是 0px，不透明度 90%+，因此视觉几乎无变化，
+     用户依然能看到完整的玻璃卡片质感。 */
   .glass--refract::before {
     display: none;
   }
-  /* 但 Tier A 的玻璃本体此前把 blur 交给了 ::before，
-     这里必须补回自身的 backdrop-filter，否则会变成完全透明的空壳 */
+  /* Tier A 用的略透明底改为完整不透明底 */
   .glass--refract {
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(130%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(130%);
     background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--glass-tint) 42%, var(--glass-refract-base)) 0%,
-      color-mix(in srgb, var(--glass-tint) 24%, var(--glass-refract-base)) 58%,
-      color-mix(in srgb, var(--glass-tint) 34%, var(--glass-refract-base)) 100%
-    );
-  }
-  /* 镜面扫光保留但减弱 */
-  .glass--refract::after {
-    opacity: 0.6;
-  }
-  :root[data-theme='light'] .glass,
-  :root[data-theme='light'] .glass--refract {
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, white 86%, var(--bg-base-end) 14%) 0%,
-      color-mix(in srgb, white 78%, var(--bg-base-end) 22%) 100%
+      135deg,
+      var(--glass-fill-1) 0%,
+      var(--glass-fill-2) 60%,
+      var(--glass-fill-3) 100%
     );
   }
 }
