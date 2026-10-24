@@ -2,6 +2,21 @@
    SimpleF2A · Components
    ========================================================================== */
 
+/* 文件路径展示（桌面模式的数据文件位置） */
+.path-code {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-input);
+  font-family: var(--code-font);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--code-surface);
+  border: 1px solid var(--code-surface-border);
+  word-break: break-all;
+  user-select: all;
+}
+
 /* ------------------------------------------------------------ 主题切换 */
 /* 切换瞬间给全局加一层颜色过渡，避免生硬跳变；reduced-motion 下由全局规则覆盖 */
 .theme-animating,

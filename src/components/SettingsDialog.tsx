@@ -11,7 +11,8 @@ import {
   parseBackupJson,
   type ImportResult,
 } from '../vault/backup';
-import { downloadFile, readFileAsText, cx } from '../lib/utils';
+import { downloadFile, readFileAsText, cx, copyText } from '../lib/utils';
+import { desktopAction } from '../lib/desktop';
 import { PlaintextExportConfirm, ResetVaultConfirm } from './DangerDialogs';
 
 type Section = 'appearance' | 'backup' | 'about';
@@ -390,8 +391,16 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 <h3 className="settings__title">SimpleF2A</h3>
                 <dl className="about-list">
                   <div>
+                    <dt>运行方式</dt>
+                    <dd>
+                      {state.mode === 'desktop' ? '桌面应用（Python + WebView2）' : '浏览器'}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>存储</dt>
-                    <dd>浏览器 IndexedDB · 数据不出本机</dd>
+                    <dd>
+                      {state.mode === 'desktop' ? '本机 JSON 文件' : '浏览器 IndexedDB'}
+                    </dd>
                   </div>
                   <div>
                     <dt>账户数</dt>
@@ -410,6 +419,56 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     <dd>Ctrl/⌘ + Shift + L 切换深浅色</dd>
                   </div>
                 </dl>
+
+                {state.mode === 'desktop' && state.storagePath && (
+                  <div className="settings__card">
+                    <div className="settings__card-head">
+                      <MorphIcon
+                        icon={icons.fileJson}
+                        size={16}
+                        reducedMotion="user"
+                        aria-hidden="true"
+                      />
+                      <span>数据文件位置</span>
+                    </div>
+                    <code className="path-code">{state.storagePath}</code>
+                    <p className="settings__desc">
+                      账户保存在这个文件里。备份它即可完整迁移；删除它等于清空所有账户。
+                    </p>
+                    <div className="input-row">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={async () => {
+                          const ok = await copyText(state.storagePath ?? '');
+                          toast(ok ? '路径已复制' : '复制失败', ok ? 'success' : 'warning');
+                        }}
+                      >
+                        <MorphIcon
+                          icon={icons.copy}
+                          size={15}
+                          reducedMotion="user"
+                          aria-hidden="true"
+                        />
+                        复制路径
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => void desktopAction('minimize')}
+                      >
+                        <MorphIcon
+                          icon={icons.lock}
+                          size={15}
+                          reducedMotion="user"
+                          aria-hidden="true"
+                        />
+                        最小化到托盘
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <p className="settings__desc">
                   详见仓库中的 SECURITY.md（使用边界）与 README.md（部署与性能说明）。
                 </p>

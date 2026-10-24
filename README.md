@@ -54,7 +54,66 @@ npm run typecheck
 
 ---
 
-## Windows 桌面版（单文件 exe）
+## 桌面版（Python + pywebview）· 推荐
+
+真正独立的桌面应用：没有浏览器地址栏，数据存在本机文件里，不受清理浏览器缓存影响。
+
+```bash
+# 一次性准备
+npm install
+python -m pip install pywebview pyinstaller
+npm run build          # 生成前端资源 dist/
+
+# 直接运行（开发/日常使用）
+python app/simplef2a.py
+
+# 打包成单文件 exe（自动输出到桌面）
+python app/build_exe.py
+```
+
+产出 **`SimpleF2A.exe`（13.5 MB）**，内含 Python 运行时 + WebView2 界面 + 全部前端资源。
+
+### 与网页版的区别
+
+| | Python 桌面版 | 网页 / Node exe |
+| --- | --- | --- |
+| 界面外壳 | 系统 WebView2，无地址栏 | 浏览器标签页 |
+| 数据位置 | `%APPDATA%\SimpleF2A\accounts.json` | 浏览器 IndexedDB |
+| 清理浏览器缓存 | **不受影响** | 账户全部丢失 |
+| 体积 | **13.5 MB** | 89 MB |
+| 系统托盘 | ✅ | ✅ |
+
+### 数据文件
+
+```
+%APPDATA%\SimpleF2A\accounts.json
+```
+
+- 纯 JSON，可直接备份、复制到另一台机器
+- 写入采用「临时文件 + 原子替换」，断电不会损坏
+- 文件损坏时自动备份为 `.corrupt.json`，不会静默覆盖
+- 设置 → 关于 里可直接看到路径并一键复制
+
+### 从浏览器迁移数据
+
+如果你之前用过网页版，用内置脚本把 IndexedDB 里的账户搬到桌面版：
+
+```bash
+python app/migrate_from_browser.py
+```
+
+它会自动扫描 Edge / Chrome 所有 profile 的 IndexedDB，解析 leveldb 日志，
+提取账户并写入 `%APPDATA%\SimpleF2A\accounts.json`（会先备份原文件）。
+
+> 原理：IndexedDB 底层是 leveldb，其 WAL 日志里保存着结构化克隆的记录。
+> 账户的 issuer / account / secret 等字段以明文形式存在，因此可直接按
+> 「字段名 + 长度前缀 + 值」的编码规则解析，无需完整的 leveldb 读取库。
+
+---
+
+## Windows 网页版 exe（Node）
+
+如果你想保留网页版的「浏览器+托盘」形态：
 
 ```bash
 npm run exe

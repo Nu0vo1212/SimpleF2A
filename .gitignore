@@ -15,3 +15,8 @@ screenshots/_*.png
 WB-AccountManager.exe
 .exe-build/
 *.exe
+build/
+__pycache__/
+*.pyc
+*.pyo
+.env.py

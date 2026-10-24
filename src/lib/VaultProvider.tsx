@@ -75,6 +75,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     accountCount: 0,
     loading: true,
     error: null,
+    mode: 'browser',
+    storagePath: null,
   });
   const [accounts, setAccounts] = useState<OtpAccount[]>([]);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -207,15 +209,27 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   /* --------------------------------------------------------- load data */
   const reloadAccounts = useCallback(async () => {
     try {
+      // 先确认运行环境：桌面版需要等 pywebview 桥注入完成，
+      // 否则会误判为浏览器模式，从 IndexedDB 读出空数据。
+      await store.ensureMode();
       const list = await store.loadAccounts();
+      const status = await store.getStatus();
       setAccounts(list);
-      setState((prev) => ({ ...prev, accountCount: list.length, loading: false, error: null }));
+      setState((prev) => ({
+        ...prev,
+        accountCount: list.length,
+        loading: false,
+        error: null,
+        mode: status.mode,
+        storagePath: status.storage?.path ?? null,
+      }));
     } catch (err) {
-      setState({
+      setState((prev) => ({
+        ...prev,
         accountCount: 0,
         loading: false,
         error: err instanceof Error ? err.message : '读取本地数据失败',
-      });
+      }));
     }
   }, []);
 
@@ -267,7 +281,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const resetVault = useCallback(async () => {
     await store.removeEverything();
     setAccounts([]);
-    setState({ accountCount: 0, loading: false, error: null });
+    setState((prev) => ({ ...prev, accountCount: 0, loading: false, error: null }));
   }, []);
 
   /* ------------------------------------------------- 全局快捷键（可选） */

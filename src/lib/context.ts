@@ -26,6 +26,10 @@ export interface AppViewState {
   accountCount: number;
   loading: boolean;
   error: string | null;
+  /** 运行环境：桌面外壳 or 浏览器 */
+  mode: 'desktop' | 'browser';
+  /** 桌面模式下的数据文件路径 */
+  storagePath: string | null;
 }
 
 export interface VaultContextValue {
