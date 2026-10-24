@@ -42,32 +42,33 @@
     background-color var(--duration-base) var(--ease-out);
 }
 
-/* 折射层：伪元素承载 SVG filter，保证内容文字永不被滤镜重采样 */
+/* 折射层：伪元素承载 SVG filter，保证内容文字永不被滤镜重采样。
+   注意 z-index 必须 >= 0 —— 用 -1 会被父元素自身的背景挡住，
+   导致在 Tier A 下反而完全看不到玻璃效果。 */
 .glass--refract::before {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -1;
+  /* 关键修复：-1 会被父元素的 isolation + background 遮住 */
+  z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-  /* 折射层的 blur 保持小半径：只做"边缘弯折"，不做整面磨砂，
-     这样背景细节能透过来，玻璃才不会变成一块灰板 */
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5))
-    saturate(calc(var(--glass-saturate) * 1.35)) brightness(var(--glass-refract-brightness))
-    contrast(1.08);
-  backdrop-filter: blur(calc(var(--glass-blur) * 0.5))
-    saturate(calc(var(--glass-saturate) * 1.35)) brightness(var(--glass-refract-brightness))
-    contrast(1.08);
+  /* 折射层只做"边缘弯折 + 色散"，不再承担主体模糊（主体自己已有 backdrop-filter） */
+  -webkit-backdrop-filter: saturate(calc(var(--glass-saturate) * 1.2))
+    brightness(var(--glass-refract-brightness));
+  backdrop-filter: saturate(calc(var(--glass-saturate) * 1.2))
+    brightness(var(--glass-refract-brightness));
   filter: url('#liquid-glass-edge');
   /* 位移只发生在边缘环带：中心保持像素稳定，验证码永不被扭曲 */
-  -webkit-mask-image: radial-gradient(96% 96% at 50% 50%, transparent 50%, #000 94%);
-  mask-image: radial-gradient(96% 96% at 50% 50%, transparent 50%, #000 94%);
+  -webkit-mask-image: radial-gradient(96% 96% at 50% 50%, transparent 46%, #000 92%);
+  mask-image: radial-gradient(96% 96% at 50% 50%, transparent 46%, #000 92%);
   opacity: 1;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Tier A：玻璃本体只保留极轻的 tint，把「磨砂厚度」交给折射层，
-   避免双层 tint 叠加成一块灰塑料 */
+/* Tier A：玻璃本体承担主体模糊，折射层只叠加边缘色散。
+   早期版本把 backdrop-filter 完全交给 ::before，一旦伪元素被遮挡
+   就会完全没有玻璃效果 —— 现在两层都有，互为兜底。 */
 .glass--refract {
   background: linear-gradient(
     145deg,
@@ -75,8 +76,8 @@
     color-mix(in srgb, var(--glass-tint) 16%, var(--glass-refract-base)) 58%,
     color-mix(in srgb, var(--glass-tint) 28%, var(--glass-refract-base)) 100%
   );
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 .glass--refract::after {
@@ -200,7 +201,8 @@
 
 /* --------------------------------------------------------------------------
    Tier C · 极简：关闭 backdrop-filter，改为可辨识的半透明纯色 + 边框
-   触发：prefers-reduced-transparency: reduce / 低端设备 / 手动
+   触发条件：浏览器完全不支持 backdrop-filter（极罕见）
+   注意：prefers-reduced-transparency 不再触发 Tier C，详见文件末尾的媒体查询
    -------------------------------------------------------------------------- */
 .tier-c .glass,
 .glass--opaque {
@@ -240,19 +242,90 @@
   background: var(--code-surface);
 }
 
-/* 降低透明度偏好：玻璃改为不透明表面 */
+/* --------------------------------------------------------------------------
+   降低透明度偏好（prefers-reduced-transparency: reduce）
+   策略：保留玻璃的「模糊 + 增色 + 亮边」这三个核心特征，
+   只去掉 RGB 色散折射与部分艳丽度，并把 tint 稍微调实一点。
+
+   为什么不像以前那样直接关掉 backdrop-filter：
+   Windows 的「透明效果」开关关闭时，Edge 会报告 reduce。
+   若据此完全禁用玻璃，用户在系统层面就被剥夺了整站视觉语言——
+   这不符合该偏好的本意（诉求是「别太花」，不是「别用玻璃」）。
+   -------------------------------------------------------------------------- */
 @media (prefers-reduced-transparency: reduce) {
+  /* 背景遮罩减淡 + 光斑增强：玻璃背后需要有明暗层次才看得出"玻璃感" */
+  .bg-overlay,
+  .bg-vignette {
+    opacity: 0.62;
+  }
+  /* 用 saturate/opacity 增强而不是 transform —— 后者会和漂移 keyframes 冲突 */
+  .bg-spot {
+    filter: blur(var(--bg-spot-blur)) saturate(1.4);
+    opacity: 1;
+  }
+  .bg-spot--teal {
+    background: radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--bg-spot-teal) 100%, transparent),
+      color-mix(in srgb, var(--bg-spot-teal) 55%, transparent) 40%,
+      transparent 72%
+    );
+  }
+  .bg-spot--indigo {
+    background: radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--bg-spot-indigo) 100%, transparent),
+      color-mix(in srgb, var(--bg-spot-indigo) 55%, transparent) 40%,
+      transparent 72%
+    );
+  }
+  .bg-spot--amber {
+    background: radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--bg-spot-amber) 100%, transparent),
+      color-mix(in srgb, var(--bg-spot-amber) 55%, transparent) 40%,
+      transparent 72%
+    );
+  }
+
   .glass {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: color-mix(in srgb, var(--bg-base) 84%, white 16%);
+    /* 保留模糊，但降低强度；提高基底不透明度保证文字可读 */
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    backdrop-filter: blur(6px) saturate(130%);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--glass-tint-strong) 130%, transparent) 0%,
+      color-mix(in srgb, var(--glass-tint) 120%, transparent) 58%,
+      color-mix(in srgb, var(--glass-tint) 110%, transparent) 100%
+    );
   }
-  :root[data-theme='light'] .glass {
-    background: color-mix(in srgb, white 90%, var(--bg-base-end) 10%);
-  }
-  .glass--refract::before,
-  .glass--refract::after {
+  /* 折射层不参与：去掉位移与色散，避免视觉噪音 */
+  .glass--refract::before {
     display: none;
+  }
+  /* 但 Tier A 的玻璃本体此前把 blur 交给了 ::before，
+     这里必须补回自身的 backdrop-filter，否则会变成完全透明的空壳 */
+  .glass--refract {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--glass-tint) 42%, var(--glass-refract-base)) 0%,
+      color-mix(in srgb, var(--glass-tint) 24%, var(--glass-refract-base)) 58%,
+      color-mix(in srgb, var(--glass-tint) 34%, var(--glass-refract-base)) 100%
+    );
+  }
+  /* 镜面扫光保留但减弱 */
+  .glass--refract::after {
+    opacity: 0.6;
+  }
+  :root[data-theme='light'] .glass,
+  :root[data-theme='light'] .glass--refract {
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, white 86%, var(--bg-base-end) 14%) 0%,
+      color-mix(in srgb, white 78%, var(--bg-base-end) 22%) 100%
+    );
   }
 }
 

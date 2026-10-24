@@ -89,12 +89,20 @@ export function detectTier(): TierReport {
 
   let tier: GlassTier = 'a';
 
+  /**
+   * prefers-reduced-transparency：只降一档到 Tier B（保留 blur + tint + 亮边，
+   * 去掉 RGB 色散/重度折射这类"花哨"效果），而不是直接关成不透明色块。
+   *
+   * 重要：Windows 的「透明效果」开关关闭时，Edge 会报告 reduce。
+   * 如果据此完全禁用 backdrop-filter，用户就完全看不到玻璃质感了 ——
+   * 这不是无障碍诉求的本意（诉求是「别太花」，不是「别用玻璃」）。
+   */
   if (prefersReducedTransparency()) {
-    tier = 'c';
-    reasons.push('系统偏好：降低透明度');
+    tier = 'b';
+    reasons.push('系统偏好：降低透明度（保留基础玻璃，关闭色散折射）');
   }
 
-  if (tier !== 'c' && !supportsBackdropFilter) {
+  if (!supportsBackdropFilter) {
     tier = 'c';
     reasons.push('浏览器不支持 backdrop-filter');
   }

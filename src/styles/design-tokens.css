@@ -55,6 +55,10 @@
   --bg-spot-teal: rgba(45, 212, 191, 0.12);
   --bg-spot-indigo: rgba(99, 102, 241, 0.14);
   --bg-spot-amber: rgba(245, 158, 11, 0.08);
+  /* 低透明度偏好下：遮罩减淡、光斑增强，给玻璃提供更清晰的折射参照 */
+  --bg-overlay-reduce: rgba(0, 0, 0, 0.26);
+  --bg-overlay-center-reduce: rgba(3, 6, 10, 0.18);
+  --bg-spot-boost: 1.75;
   --bg-spot-blur: 90px;
   --bg-spot-drift-duration: 26s;
   --bg-lines-opacity: 0.04;
